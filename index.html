@@ -1,0 +1,3153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI-INVENTARIS LAB TKJ | SMKS Yadika 6 Bekasi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS (xlsx) Library untuk Membaca File Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; font-size: 11pt !important; }
+            .print-container { 
+                box-shadow: none !important; 
+                border: none !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                width: 100% !important;
+            }
+            @page {
+                size: A4;
+                margin: 1.5cm;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- LOGIN MODAL / VIEW (If not logged in) -->
+    <div id="authContainer" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 text-white text-center">
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-white/20">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <h1 class="text-xl font-bold">SI-INVENTARIS LAB TKJ</h1>
+                <p class="text-xs text-blue-200 mt-1">SMKS YADIKA 6 BEKASI</p>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Username / ID</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-user"></i></span>
+                            <input type="text" id="loginUser" required class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none" placeholder="Masukkan username...">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Password</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                            <input type="password" id="loginPass" required class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition duration-200 shadow-md shadow-blue-600/20 text-sm">
+                        Masuk Sistem
+                    </button>
+                </form>
+            </div>
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 text-center text-xs text-slate-400">
+                &copy; 2026 Lab TKJ SMKS Yadika 6 Bekasi
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER (Hidden until login) -->
+    <div id="appContainer" class="hidden flex-col min-h-screen">
+        <!-- Navbar -->
+        <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 p-2 rounded-lg text-white">
+                        <i class="fa-solid fa-server text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-base tracking-wide block">LAB TKJ YADIKA 6</span>
+                        <span id="portalTitleBadge" class="text-[10px] text-slate-400 tracking-wider uppercase">Portal Manajemen</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right hidden sm:block">
+                        <p id="userNameDisplay" class="text-xs font-semibold text-blue-400">Nama Pengguna</p>
+                        <p id="userRoleDisplay" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full inline-block mt-0.5 border border-slate-700">Role</p>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition duration-200 border border-rose-500/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+            
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 no-print">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Unit Kondisi Baik</p>
+                        <h3 id="statTotalBaik" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Unit Rusak / Servis</p>
+                        <h3 id="statTotalRusak" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Jenis BHP Lab</p>
+                        <h3 id="statTotalBhp" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-plug"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Menunggu Verifikasi</p>
+                        <h3 id="statPendingLoans" class="text-2xl font-bold text-purple-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div id="navTabsContainer" class="flex border-b border-slate-200 mb-6 space-x-6 overflow-x-auto no-print">
+                <!-- Rendered dynamically by JS -->
+            </div>
+
+            <!-- TAB 1: INVENTARIS -->
+            <div id="tabContent-inventaris" class="space-y-4 no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="relative w-full sm:w-72">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-search"></i></span>
+                        <input type="text" id="searchInventaris" oninput="renderInventaris()" placeholder="Cari barang inventaris..." class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    
+                    <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                        <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                            <i class="fa-solid fa-file-excel"></i> Template Excel
+                        </button>
+                        <button onclick="openImportModal()" id="btnImportInventaris" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                            <i class="fa-solid fa-file-arrow-up"></i> Import Excel
+                        </button>
+                        <button onclick="openInventarisModal()" id="btnAddInventaris" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                            <i class="fa-solid fa-plus"></i> Tambah Inventaris
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-3.5 pl-5">Kode / Barang</th>
+                                    <th class="p-3.5">Spesifikasi</th>
+                                    <th class="p-3.5 text-center">Jml Baik (Tersedia)</th>
+                                    <th class="p-3.5 text-center">Jml Rusak / Servis</th>
+                                    <th class="p-3.5">Harga Satuan / Total</th>
+                                    <th class="p-3.5">Sumber Dana / Lokasi</th>
+                                    <th class="p-3.5 text-center action-col">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableInventarisBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                <!-- Rendered by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1.1: INVENTARIS BERDASARKAN TEMPAT PENYIMPANAN -->
+            <div id="tabContent-lokasi-menu" class="hidden space-y-4 no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Manajemen & Tampilan Inventaris Berdasarkan Tempat Penyimpanan</h3>
+                        <p class="text-xs text-slate-500">Pilih atau filter lokasi penyimpanan untuk memeriksa aset yang tersimpan pada setiap titik lab.</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <select id="filterLokasiSelect" onchange="renderLokasiMenuTable()" class="w-full sm:w-64 p-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none font-semibold text-slate-800">
+                            <option value="ALL">-- Tampilkan Semua Lokasi --</option>
+                        </select>
+                        <button onclick="switchTab('laporan-lokasi')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition whitespace-nowrap">
+                            <i class="fa-solid fa-print"></i> Cetak Laporan Lokasi
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Titik Lokasi</p>
+                            <h3 id="locMenuStatTotalLoc" class="text-xl font-bold text-slate-800 mt-0.5">0</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-base">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Unit Barang (Baik)</p>
+                            <h3 id="locMenuStatTotalUnit" class="text-xl font-bold text-emerald-600 mt-0.5">0</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-base">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Akumulasi Nilai Aset</p>
+                            <h3 id="locMenuStatTotalVal" class="text-lg font-bold text-blue-600 mt-0.5">Rp 0</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-base">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-3.5 pl-5">Tempat / Lokasi Penyimpanan</th>
+                                    <th class="p-3.5">Daftar Barang & Rincian Aset</th>
+                                    <th class="p-3.5 text-center">Total Unit (Baik)</th>
+                                    <th class="p-3.5 text-right pr-5">Total Nilai Aset (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableLocMenuBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1.2: MUTASI BARANG INVENTARIS (ADMIN ONLY) -->
+            <div id="tabContent-mutasi" class="hidden space-y-4 no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Manajemen Mutasi / Perpindahan Barang Inventaris</h3>
+                        <p class="text-xs text-slate-500">Pindahkan aset antar tempat penyimpanan lab secara transparan dan terdokumentasi.</p>
+                    </div>
+                    <button onclick="openMutasiModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                        <i class="fa-solid fa-right-left"></i> Catat Mutasi Baru
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-3.5 pl-5">Tanggal & Kode Mutasi</th>
+                                    <th class="p-3.5">Nama Barang / Aset</th>
+                                    <th class="p-3.5 text-center">Jml Unit</th>
+                                    <th class="p-3.5">Asal Lokasi $\rightarrow$ Tujuan Lokasi</th>
+                                    <th class="p-3.5">Keterangan / Penanggung Jawab</th>
+                                    <th class="p-3.5 text-center">Aksi / Berita Acara</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableMutasiBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: BHP -->
+            <div id="tabContent-bhp" class="hidden space-y-4 no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="relative w-full sm:w-72">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-search"></i></span>
+                        <input type="text" id="searchBhp" oninput="renderBhp()" placeholder="Cari bahan habis pakai..." class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                        <button onclick="switchTab('laporan-bhp')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                            <i class="fa-solid fa-print"></i> Laporan Bulanan BHP
+                        </button>
+                        <button onclick="openBhpModal()" id="btnAddBhp" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                            <i class="fa-solid fa-plus"></i> Tambah BHP Baru
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-3.5 pl-5">Nama Bahan</th>
+                                    <th class="p-3.5">Spesifikasi / Detail</th>
+                                    <th class="p-3.5 text-center">Stok</th>
+                                    <th class="p-3.5">Tgl Datang</th>
+                                    <th class="p-3.5">Harga Satuan / Total</th>
+                                    <th class="p-3.5">Sumber Dana / Lokasi</th>
+                                    <th class="p-3.5 text-center">Status Stok</th>
+                                    <th class="p-3.5 text-center action-col">Aksi / Stok</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBhpBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                <!-- Rendered by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: INVENTARIS RUSAK -->
+            <div id="tabContent-rusak" class="hidden space-y-4 no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Daftar Inventaris Rusak / Dalam Perbaikan</h3>
+                        <p class="text-xs text-slate-500">Pencatatan aset lab yang mengalami kerusakan atau sedang tahap maintenance (Stok otomatis berkurang).</p>
+                    </div>
+                    <button onclick="openRusakModal()" id="btnAddRusak" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Catat Kerusakan Barang
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-3.5 pl-5">Kode / Nama Barang</th>
+                                    <th class="p-3.5 text-center">Jml Rusak</th>
+                                    <th class="p-3.5">Tanggal Rusak</th>
+                                    <th class="p-3.5">Keterangan / Kerusakan</th>
+                                    <th class="p-3.5 text-center">Status</th>
+                                    <th class="p-3.5 text-center">Aksi Pemulihan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableRusakBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: PEMINJAMAN -->
+            <div id="tabContent-peminjaman" class="hidden space-y-4 no-print">
+                <div id="loanContentLayout" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Peminjaman & Pengambilan BHP -->
+                    <div id="loanFormContainer" class="bg-white rounded-xl border border-slate-200 shadow-xs h-fit overflow-hidden">
+                        <div class="bg-blue-700 px-5 py-3.5 text-white flex justify-between items-center">
+                            <h3 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-circle-plus"></i> Form Peminjaman / BHP
+                            </h3>
+                            <button onclick="openEditKelasModal()" class="bg-white/20 hover:bg-white/30 text-white text-[10px] px-2.5 py-1 rounded transition flex items-center gap-1" title="Kelola / Tambah Pilihan Kelas">
+                                <i class="fa-solid fa-gear"></i> Kelola Kelas
+                            </button>
+                        </div>
+                        <form id="loanForm" onsubmit="handleLoanSubmit(event)" class="p-4 space-y-3 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Tanggal Peminjaman <span class="text-rose-500">*</span></label>
+                                <input type="date" id="loanTglPinjam" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Nama lengkap peminjam <span class="text-rose-500">*</span></label>
+                                <input type="text" id="loanPeminjam" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium text-slate-900" placeholder="Nama lengkap...">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Materi Pembelajaran <span class="text-rose-500">*</span></label>
+                                <input type="text" id="loanTopik" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Misal: Konfigurasi Routing / Crimping UTP">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Kelas <span class="text-rose-500">*</span></label>
+                                <select id="loanKelas" onchange="checkKelasManual()" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 mb-1.5">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <!-- Kolom Input Manual Jika Memilih Lainnya -->
+                                <input type="text" id="loanKelasManual" placeholder="Ketik keperluan / kelas lainnya secara manual..." class="hidden w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Jenis Pengajuan <span class="text-rose-500">*</span></label>
+                                <select id="loanJenisKategori" onchange="updateLoanItemDropdown()" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                    <option value="Inventaris">Inventaris (Dipinjam)</option>
+                                    <option value="BHP">Bahan Habis Pakai / BHP</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1" id="loanBarangLabel">Pilih Barang <span class="text-rose-500">*</span></label>
+                                <select id="loanBarangId" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Jumlah <span class="text-rose-500">*</span></label>
+                                <input type="number" id="loanJumlah" min="1" value="1" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold">
+                            </div>
+                            <input type="hidden" id="loanTanggal" value="">
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg shadow-sm transition mt-1">
+                                Kirim Permintaan
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- List Daftar Antrean Persetujuan Peminjaman & BHP -->
+                    <div id="loanTableContainer" class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+                        <h3 class="text-sm font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-list-check text-blue-600"></i> Status Pengajuan & Riwayat Transaksi</span>
+                            <span id="loanBadgeCount" class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-semibold">0 Aktif</span>
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                        <th class="p-3">Pemohon</th>
+                                        <th class="p-3">Barang / BHP</th>
+                                        <th class="p-3 text-center">Jml</th>
+                                        <th class="p-3">Tanggal Pinjam & Tempo</th>
+                                        <th class="p-3 text-center">Status / Kategori</th>
+                                        <th class="p-3 text-center">Aksi / Verifikasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableLoanBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: PENGATURAN KOP SURAT (Admin Only) -->
+            <div id="tabContent-kop-surat" class="hidden space-y-4 no-print">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs max-w-2xl mx-auto space-y-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-file-lines text-blue-600"></i> Pengaturan Kop Surat & Logo Sekolah</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Sesuaikan teks institusi dan unggah logo resmi (.png) yang akan otomatis tampil pada semua dokumen cetak.</p>
+                    </div>
+
+                    <form id="kopForm" onsubmit="saveKopSurat(event)" class="space-y-4 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Nama Yayasan / Instansi</label>
+                            <input type="text" id="kopYayasan" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Nama Sekolah / Lembaga</label>
+                            <input type="text" id="kopSekolah" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Program Keahlian / Unit</label>
+                            <input type="text" id="kopUnit" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Alamat Lengkap</label>
+                            <input type="text" id="kopAlamat" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+
+                        <div class="border-t border-slate-200 pt-4 space-y-3">
+                            <label class="block font-semibold text-slate-700">Logo Sekolah (Format .PNG)</label>
+                            <div class="flex items-center gap-4">
+                                <div id="logoPreviewContainer" class="w-16 h-16 border border-slate-300 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden">
+                                    <span class="text-[10px] text-slate-400 text-center">No Logo</span>
+                                </div>
+                                <div class="flex-grow space-y-1">
+                                    <input type="file" id="logoFileInput" accept=".png" onchange="previewLogo(event)" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+                                    <p class="text-[10px] text-slate-500">Unggah file gambar berformat PNG transparan / latar putih (Disarankan rasio 1:1).</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 flex justify-end">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-sm transition">
+                                <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Pengaturan Kop Surat
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 6.1: PENGATURAN PENANDATANGAN LAPORAN (Admin Only) -->
+            <div id="tabContent-penandatangan" class="hidden space-y-4 no-print">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs max-w-3xl mx-auto space-y-5">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-signature text-indigo-600"></i> Pengaturan Pejabat Penandatangan Dokumen</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Tambah, edit, atau hapus daftar pejabat yang dapat dipilih/dicetak pada bagian bawah laporan dan berita acara.</p>
+                        </div>
+                        <button onclick="openSignerModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition whitespace-nowrap">
+                            <i class="fa-solid fa-user-plus"></i> Tambah Pejabat Baru
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Daftar Pejabat Tersedia:</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse border border-slate-200 text-xs rounded-lg overflow-hidden">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 font-bold">
+                                        <th class="p-3 border-b border-slate-200">Nama Pejabat & Gelar</th>
+                                        <th class="p-3 border-b border-slate-200">Jabatan Resmi</th>
+                                        <th class="p-3 border-b border-slate-200">NIP</th>
+                                        <th class="p-3 border-b border-slate-200 text-center w-24">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="signersTableBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-50 p-4 rounded-xl">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-xs"><i class="fa-solid fa-circle-info text-blue-600 mr-1"></i> Pengaturan Posisi Cetak Default (Kiri & Kanan Dokumen)</h4>
+                            <p class="text-[11px] text-slate-500">Pilih pejabat mana yang akan tampil di posisi Kiri dan Kanan pada saat dokumen dicetak.</p>
+                        </div>
+                        <button onclick="saveSignerDefaults()" class="bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-xs transition shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Pengaturan Default
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="border border-slate-200 p-4 rounded-xl space-y-2.5 bg-slate-50/50">
+                            <label class="block font-bold text-slate-800 text-xs"><i class="fa-solid fa-user-tie text-blue-600 mr-1"></i> Pejabat Sisi Kiri Dokumen</label>
+                            <select id="defaultSignerKiriId" onchange="updateSignerDefaultSelection()" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="border border-slate-200 p-4 rounded-xl space-y-2.5 bg-slate-50/50">
+                            <label class="block font-bold text-slate-800 text-xs"><i class="fa-solid fa-user-gear text-emerald-600 mr-1"></i> Pejabat Sisi Kanan Dokumen</label>
+                            <select id="defaultSignerKananId" onchange="updateSignerDefaultSelection()" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: MANAJEMEN AKUN GURU (Admin Only) -->
+            <div id="tabContent-akun" class="hidden space-y-4 no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Manajemen Akun Guru Produktif</h3>
+                        <p class="text-xs text-slate-500">Buat dan kelola akun login untuk masing-masing guru pengajar / praktikum.</p>
+                    </div>
+                    <button onclick="openAkunModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow-xs transition">
+                        <i class="fa-solid fa-user-plus"></i> Tambah Akun Guru Baru
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-3.5 pl-5">Nama Guru / Pengajar</th>
+                                    <th class="p-3.5">Username Login</th>
+                                    <th class="p-3.5">Password</th>
+                                    <th class="p-3.5 text-center">Role / Hak Akses</th>
+                                    <th class="p-3.5 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableAkunBody" class="divide-y divide-slate-100 text-xs text-slate-700">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: BERITA ACARA MUTASI BARANG (PRINT VIEW) -->
+            <div id="tabContent-berita-acara-mutasi" class="hidden space-y-6">
+                <!-- Toolbar Kontrol Berita Acara (Hidden on Print) -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Dokumen Berita Acara Mutasi Barang Inventaris</h3>
+                        <p class="text-xs text-slate-500">Lembar resmi perpindahan posisi aset laboratorium TKJ.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button onclick="switchTab('mutasi')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                            <i class="fa-solid fa-arrow-left"></i> Kembali ke Menu Mutasi
+                        </button>
+                        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition shadow-sm">
+                            <i class="fa-solid fa-print"></i> Cetak Berita Acara
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LEMBAR CETAK FORMAL BERITA ACARA MUTASI -->
+                <div class="print-container bg-white p-10 rounded-xl border border-slate-200 shadow-xs space-y-6 font-sans text-slate-900">
+                    <!-- KOP SURAT SEKOLAH -->
+                    <div class="flex items-center border-b-2 border-slate-900 pb-4 gap-4">
+                        <div id="printLogoContainerMutasi" class="w-20 h-20 flex-shrink-0 flex items-center justify-center">
+                            <!-- Logo Rendered by JS -->
+                        </div>
+                        <div class="text-center flex-grow space-y-1">
+                            <h2 id="printYayasan" class="text-sm sm:text-base font-bold uppercase tracking-wider"></h2>
+                            <h1 id="printSekolah" class="text-lg sm:text-xl font-extrabold uppercase tracking-wide"></h1>
+                            <p id="printUnit" class="text-xs font-semibold text-slate-700"></p>
+                            <p id="printAlamat" class="text-[11px] text-slate-600"></p>
+                        </div>
+                    </div>
+
+                    <!-- JUDUL DOKUMEN -->
+                    <div class="text-center py-2 space-y-1">
+                        <h3 class="text-sm font-bold uppercase underline">BERITA ACARA MUTASI / PERPINDAHAN ASET INVENTARIS</h3>
+                        <p class="text-xs text-slate-700 font-mono">Nomor Dokumen: <span id="baMutasiNomor" class="font-bold"></span></p>
+                    </div>
+
+                    <!-- ISI TEKS BERITA ACARA -->
+                    <div class="text-xs leading-relaxed space-y-3 text-slate-800">
+                        <p>Pada hari ini, <span id="baMutasiHariTanggal" class="font-bold"></span>, bertempat di Laboratorium Teknik Komputer dan Jaringan (TKJ) SMKS Yadika 6 Bekasi, telah dilaksanakan perpindahan (mutasi) penempatan barang inventaris lab dengan rincian sebagai berikut:</p>
+
+                        <!-- TABEL RINCIAN MUTASI -->
+                        <div class="overflow-x-auto py-2">
+                            <table class="w-full text-left border-collapse border border-slate-400 text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-900 font-bold">
+                                        <th class="p-2.5 border border-slate-400">Nama Barang / Aset</th>
+                                        <th class="p-2.5 border border-slate-400 text-center">Jumlah Unit</th>
+                                        <th class="p-2.5 border border-slate-400">Lokasi Asal (Semula)</th>
+                                        <th class="p-2.5 border border-slate-400">Lokasi Tujuan (Baru)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td id="baMutasiBarangNama" class="p-2.5 border border-slate-400 font-bold"></td>
+                                        <td id="baMutasiJumlahUnit" class="p-2.5 border border-slate-400 text-center font-bold text-blue-800"></td>
+                                        <td id="baMutasiAsalLokasi" class="p-2.5 border border-slate-400"></td>
+                                        <td id="baMutasiTujuanLokasi" class="p-2.5 border border-slate-400 font-bold"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p><strong>Alasan / Keterangan Mutasi:</strong><br><span id="baMutasiKeterangan" class="italic text-slate-700 block bg-slate-50 p-2.5 rounded border border-slate-200 mt-1"></span></p>
+
+                        <p>Demikian Berita Acara Mutasi Barang Inventaris ini dibuat dengan sebenarnya dan penuh tanggung jawab agar dapat dipergunakan sebagaimana mestinya oleh pihak laboratorium dan manajemen sekolah.</p>
+                    </div>
+
+                    <!-- LEMBAR TANDA TANGAN PENGESAHAN -->
+                    <div class="flex justify-between pt-16 text-xs text-slate-900 page-break-inside-avoid">
+                        <div class="text-center space-y-1">
+                            <p>Mengetahui,</p>
+                            <p id="printSignKiriJabatan" class="font-bold">Kepala Program Keahlian TKJ</p>
+                            <div class="h-20"></div>
+                            <p id="printSignKiriNama" class="font-bold underline">H. / Ibu Kepala Program, S.T.</p>
+                            <p class="text-[10px] text-slate-600">NIP. <span id="printSignKiriNip">............................................</span></p>
+                        </div>
+                        <div class="text-center space-y-1">
+                            <p>Bekasi, <span id="currentDateSignMutasi"></span></p>
+                            <p id="printSignKananJabatan" class="font-bold">Petugas / Penanggung Jawab</p>
+                            <div class="h-20"></div>
+                            <p id="printSignKananNama" class="font-bold underline">Administrator Lab TKJ</p>
+                            <p class="text-[10px] text-slate-600">NIP. <span id="printSignKananNip">............................................</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 9: LAPORAN BERDASARKAN TEMPAT PENYIMPANAN -->
+            <div id="tabContent-laporan-lokasi" class="hidden space-y-6">
+                <!-- Toolbar Kontrol Laporan Lokasi (Hidden on Print) -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Laporan Inventaris Berdasarkan Tempat / Lokasi Penyimpanan</h3>
+                        <p class="text-xs text-slate-500">Dokumen rekapitulasi formal aset lab per titik lokasi penyimpanan.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button onclick="switchTab('lokasi-menu')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                            <i class="fa-solid fa-arrow-left"></i> Kembali ke Menu Lokasi
+                        </button>
+                        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition shadow-sm">
+                            <i class="fa-solid fa-print"></i> Cetak Laporan Lokasi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LEMBAR CETAK FORMAL LOKASI (PRINT CONTAINER) -->
+                <div class="print-container bg-white p-10 rounded-xl border border-slate-200 shadow-xs space-y-6 font-sans text-slate-900">
+                    <!-- KOP SURAT SEKOLAH -->
+                    <div class="flex items-center border-b-2 border-slate-900 pb-4 gap-4">
+                        <div id="printLogoContainerLoc" class="w-20 h-20 flex-shrink-0 flex items-center justify-center"></div>
+                        <div class="text-center flex-grow space-y-1">
+                            <h2 class="printYayasan text-sm sm:text-base font-bold uppercase tracking-wider"></h2>
+                            <h1 class="printSekolah text-lg sm:text-xl font-extrabold uppercase tracking-wide"></h1>
+                            <p class="printUnit text-xs font-semibold text-slate-700"></p>
+                            <p class="printAlamat text-[11px] text-slate-600"></p>
+                        </div>
+                    </div>
+
+                    <!-- JUDUL DOKUMEN -->
+                    <div class="text-center py-2">
+                        <h3 class="text-sm font-bold uppercase underline">DAFTAR INVENTARIS BERDASARKAN TEMPAT / LOKASI PENYIMPANAN</h3>
+                        <p class="text-xs text-slate-600 mt-1">Laboratorium Teknik Komputer dan Jaringan (TKJ)</p>
+                    </div>
+
+                    <!-- RINGKASAN LOKASI -->
+                    <div class="grid grid-cols-2 gap-4 my-4">
+                        <div class="border border-slate-300 p-3 rounded bg-blue-50/50 text-center">
+                            <p class="text-[10px] uppercase font-bold text-blue-700">Total Titik Lokasi Penyimpanan</p>
+                            <h4 id="reportLocCount" class="text-lg font-extrabold text-blue-900 mt-0.5">0 Lokasi</h4>
+                        </div>
+                        <div class="border border-slate-300 p-3 rounded bg-emerald-50/50 text-center">
+                            <p class="text-[10px] uppercase font-bold text-emerald-700">Akumulasi Nilai Seluruh Aset Lab</p>
+                            <h4 id="reportTotalAssetVal" class="text-lg font-extrabold text-emerald-900 mt-0.5">Rp 0</h4>
+                        </div>
+                    </div>
+
+                    <!-- TABEL UTAMA REKAP LOKASI -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wide text-slate-800 border-l-4 border-indigo-700 pl-2">Rincian Aset per Titik Lokasi Penyimpanan Lab TKJ</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse border border-slate-400 text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-900 font-bold">
+                                        <th class="p-2.5 border border-slate-400 text-center w-12">No</th>
+                                        <th class="p-2.5 border border-slate-400 w-1/4">Tempat / Lokasi Penyimpanan</th>
+                                        <th class="p-2.5 border border-slate-400">Daftar Barang & Rincian Unit</th>
+                                        <th class="p-2.5 border border-slate-400 text-center w-24">Total Unit</th>
+                                        <th class="p-2.5 border border-slate-400 text-right w-36">Total Nilai (Rp)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableLocationBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- LEMBAR TANDA TANGAN PENGESAHAN -->
+                    <div class="flex justify-between pt-16 text-xs text-slate-900 page-break-inside-avoid">
+                        <div class="text-center space-y-1">
+                            <p>Mengetahui,</p>
+                            <p class="printSignKiriJabatan font-bold">Kepala Program Keahlian TKJ</p>
+                            <div class="h-20"></div>
+                            <p class="printSignKiriNama font-bold underline">H. / Ibu Kepala Program, S.T.</p>
+                            <p class="text-[10px] text-slate-600">NIP. <span class="printSignKiriNip">............................................</span></p>
+                        </div>
+                        <div class="text-center space-y-1">
+                            <p>Bekasi, <span id="currentDateSignLoc"></span></p>
+                            <p class="printSignKananJabatan font-bold">Penanggung Jawab Laboratorium</p>
+                            <div class="h-20"></div>
+                            <p class="printSignKananNama font-bold underline">Administrator Lab TKJ</p>
+                            <p class="text-[10px] text-slate-600">NIP. <span class="printSignKananNip">............................................</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 10: LAPORAN BULANAN BHP (PRINT VIEW) -->
+            <div id="tabContent-laporan-bhp" class="hidden space-y-6">
+                <!-- Toolbar Kontrol Laporan BHP (Hidden on Print) -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Laporan Bulanan Bahan Habis Pakai (BHP) Lab TKJ</h3>
+                        <p class="text-xs text-slate-500">Dokumen rekapitulasi stok, penggunaan, dan nilai pengeluaran BHP laboratorium.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button onclick="switchTab('bhp')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                            <i class="fa-solid fa-arrow-left"></i> Kembali ke Menu BHP
+                        </button>
+                        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition shadow-sm">
+                            <i class="fa-solid fa-print"></i> Cetak Laporan Bulanan BHP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LEMBAR CETAK FORMAL LAPORAN BULANAN BHP -->
+                <div class="print-container bg-white p-10 rounded-xl border border-slate-200 shadow-xs space-y-6 font-sans text-slate-900">
+                    <!-- KOP SURAT SEKOLAH -->
+                    <div class="flex items-center border-b-2 border-slate-900 pb-4 gap-4">
+                        <div id="printLogoContainerBhp" class="w-20 h-20 flex-shrink-0 flex items-center justify-center"></div>
+                        <div class="text-center flex-grow space-y-1">
+                            <h2 class="printYayasan text-sm sm:text-base font-bold uppercase tracking-wider"></h2>
+                            <h1 class="printSekolah text-lg sm:text-xl font-extrabold uppercase tracking-wide"></h1>
+                            <p class="printUnit text-xs font-semibold text-slate-700"></p>
+                            <p class="printAlamat text-[11px] text-slate-600"></p>
+                        </div>
+                    </div>
+
+                    <!-- JUDUL DOKUMEN -->
+                    <div class="text-center py-2 space-y-1">
+                        <h3 class="text-sm font-bold uppercase underline">LAPORAN BULANAN BAHAN HABIS PAKAI (BHP) LABORATORIUM</h3>
+                        <p class="text-xs text-slate-700">Periode Bulan: <span id="reportBhpPeriode" class="font-bold uppercase"></span></p>
+                    </div>
+
+                    <!-- RINGKASAN BHP -->
+                    <div class="grid grid-cols-2 gap-4 my-4">
+                        <div class="border border-slate-300 p-3 rounded bg-emerald-50/50 text-center">
+                            <p class="text-[10px] uppercase font-bold text-emerald-700">Total Jenis & Sisa Stok BHP</p>
+                            <h4 id="reportBhpTotalJenis" class="text-lg font-extrabold text-emerald-900 mt-0.5">0 Jenis / 0 Unit</h4>
+                        </div>
+                        <div class="border border-slate-300 p-3 rounded bg-blue-50/50 text-center">
+                            <p class="text-[10px] uppercase font-bold text-blue-700">Akumulasi Nilai Persediaan BHP</p>
+                            <h4 id="reportBhpTotalVal" class="text-lg font-extrabold text-blue-900 mt-0.5">Rp 0</h4>
+                        </div>
+                    </div>
+
+                    <!-- TABEL UTAMA LAPORAN BHP -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wide text-slate-800 border-l-4 border-emerald-700 pl-2">Rekapitulasi Persediaan & Pemakaian Bahan Habis Pakai Lab TKJ</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse border border-slate-400 text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-900 font-bold">
+                                        <th class="p-2.5 border border-slate-400 text-center w-10">No</th>
+                                        <th class="p-2.5 border border-slate-400">Nama Bahan / Komponen</th>
+                                        <th class="p-2.5 border border-slate-400">Spesifikasi / Detail</th>
+                                        <th class="p-2.5 border border-slate-400 text-center w-16">Sisa Stok</th>
+                                        <th class="p-2.5 border border-slate-400 text-center w-16">Satuan</th>
+                                        <th class="p-2.5 border border-slate-400 text-right w-24">Harga Satuan</th>
+                                        <th class="p-2.5 border border-slate-400 text-right w-28">Total Nilai</th>
+                                        <th class="p-2.5 border border-slate-400">Sumber Dana & Lokasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableBhpBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- LEMBAR TANDA TANGAN PENGESAHAN -->
+                    <div class="flex justify-between pt-16 text-xs text-slate-900 page-break-inside-avoid">
+                        <div class="text-center space-y-1">
+                            <p>Mengetahui,</p>
+                            <p class="printSignKiriJabatan font-bold">Kepala Program Keahlian TKJ</p>
+                            <div class="h-20"></div>
+                            <p class="printSignKiriNama font-bold underline">H. / Ibu Kepala Program, S.T.</p>
+                            <p class="text-[10px] text-slate-600">NIP. <span class="printSignKiriNip">............................................</span></p>
+                        </div>
+                        <div class="text-center space-y-1">
+                            <p>Bekasi, <span id="currentDateSignBhp"></span></p>
+                            <p class="printSignKananJabatan font-bold">Penanggung Jawab Laboratorium</p>
+                            <div class="h-20"></div>
+                            <p class="printSignKananNama font-bold underline">Administrator Lab TKJ</p>
+                            <p class="text-[10px] text-slate-600">NIP. <span class="printSignKananNip">............................................</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 py-4 mt-auto text-center text-xs text-slate-500 no-print">
+            <p>Sistem Informasi Inventaris Lab TKJ &bull; SMKS Yadika 6 Bekasi &copy; 2026</p>
+        </footer>
+    </div>
+
+    <!-- MODAL TAMBAH / EDIT PEJABAT PENANDATANGAN -->
+    <div id="signerModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="signerModalTitle" class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-user-pen"></i> Tambah Pejabat Penandatangan</h3>
+                <button onclick="closeSignerModal()" class="text-indigo-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="signerForm" onsubmit="saveSignerItem(event)" class="p-6 space-y-3.5 text-xs">
+                <input type="hidden" id="signerEditId" value="">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
+                    <input type="text" id="signerInputNama" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Contoh: Ahmad Fauzi, S.Kom">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Jabatan Resmi</label>
+                    <input type="text" id="signerInputJabatan" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Contoh: Kepala Program Keahlian TKJ">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">NIP / Nomor Induk Pegawai</label>
+                    <input type="text" id="signerInputNip" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Contoh: 19820101 201001 1 001">
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeSignerModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition">Simpan Pejabat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL KELOLA / EDIT KELAS -->
+    <div id="editKelasModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-blue-800 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-school"></i> Kelola Daftar Pilihan Kelas</h3>
+                <button onclick="closeEditKelasModal()" class="text-blue-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <div class="space-y-2">
+                    <label class="block font-semibold text-slate-700">Tambah Kelas Baru:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="newKelasInput" placeholder="Contoh: XII DKV 1 / XI TKJ 3" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        <button type="button" onclick="addNewKelas()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition whitespace-nowrap">Tambah</button>
+                    </div>
+                </div>
+
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <label class="block font-semibold text-slate-700">Daftar Kelas Tersedia:</label>
+                    <div id="kelasListContainer" class="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 rounded-lg p-2 bg-slate-50">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button type="button" onclick="closeEditKelasModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition">Selesai</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IMPORT DATA INVENTARIS EXCEL / CSV -->
+    <div id="importModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-file-arrow-up"></i> Import Data Inventaris dari Excel</h3>
+                <button onclick="closeImportModal()" class="text-indigo-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-lg text-indigo-900 space-y-1">
+                    <p class="font-bold"><i class="fa-solid fa-circle-info mr-1"></i> Petunjuk Import:</p>
+                    <p>1. Unduh terlebih dahulu file template Excel melalui tombol <b>Template Excel</b> di atas.</p>
+                    <p>2. Isi data sesuai kolom: <b>kode, nama, spesifikasi, jumlah, harga, tanggal, sumber, lokasi</b>.</p>
+                    <p>3. Unggah file (.xlsx / .xls / .csv) melalui form di bawah ini.</p>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Pilih File Excel / CSV:</label>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="button" onclick="processExcelImport()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition">Proses Import Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CATAT MUTASI BARANG -->
+    <div id="mutasiModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100">
+            <div class="bg-blue-800 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-right-left"></i> Catat Mutasi / Perpindahan Lokasi Aset</h3>
+                <button onclick="closeMutasiModal()" class="text-blue-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="mutasiForm" onsubmit="saveMutasiItem(event)" class="p-6 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Pilih Barang Inventaris</label>
+                    <select id="mutasiBarangId" onchange="onMutasiBarangChange()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Lokasi Asal (Saat Ini)</label>
+                        <input type="text" id="mutasiAsalLokasi" readonly class="w-full p-2.5 bg-slate-200 border border-slate-300 rounded-lg text-slate-700 font-semibold cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Jumlah Unit Dipindah</label>
+                        <input type="number" id="mutasiJumlah" min="1" value="1" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Lokasi Tujuan Baru</label>
+                    <input type="text" id="mutasiTujuanLokasi" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Contoh: Rak Server 2 / Meja Lab B">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Tanggal Mutasi</label>
+                        <input type="date" id="mutasiTanggal" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Penanggung Jawab / Petugas</label>
+                        <input type="text" id="mutasiPetugas" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Nama Admin / Teknisi">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Keterangan / Alasan Mutasi</label>
+                    <textarea id="mutasiKeterangan" rows="2" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Contoh: Penataan ulang layout lab untuk praktik jaringan..."></textarea>
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeMutasiModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition">Simpan Mutasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH AKUN GURU -->
+    <div id="akunModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Tambah Akun Guru Praktik</h3>
+                <button onclick="closeAkunModal()" class="text-indigo-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="akunForm" onsubmit="saveAkunGuru(event)" class="p-6 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Nama Lengkap Guru & Gelar</label>
+                    <input type="text" id="akunNama" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Contoh: Bpk. Ahmad Fauzi, S.Kom">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Username Login</label>
+                    <input type="text" id="akunUsername" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Contoh: ahmad.fauzi">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Password</label>
+                    <input type="password" id="akunPassword" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="••••••••">
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeAkunModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition">Simpan Akun</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI PENGEMBALIAN / SELESAIKAN -->
+    <div id="returnModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-blue-800 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-clipboard-check"></i> Konfirmasi Pengembalian Barang</h3>
+                <button onclick="closeReturnModal()" class="text-blue-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="returnLoanId" value="">
+                
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
+                    <p class="text-slate-500 font-semibold">Detail Peminjaman:</p>
+                    <p>• Peminjam: <strong id="returnPeminjamName" class="text-slate-800"></strong></p>
+                    <p>• Barang: <strong id="returnBarangName" class="text-slate-800"></strong></p>
+                    <p>• Total Dipinjam: <strong id="returnTotalPinjam" class="text-blue-700 font-bold"></strong> Unit</p>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Jumlah Barang Rusak Saat Dikembalikan (Unit):</label>
+                    <input type="number" id="returnJmlRusakInput" min="0" value="0" oninput="calculateReturnCondition()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold">
+                    <p class="text-[10px] text-slate-500 mt-1">Masukkan angka 0 jika seluruh unit kembali dalam kondisi baik.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-center">
+                        <p class="text-[10px] font-bold uppercase text-emerald-700">Kondisi Baik</p>
+                        <p id="returnCalcBaik" class="text-base font-extrabold text-emerald-800 mt-0.5">0 Unit</p>
+                    </div>
+                    <div class="bg-rose-50 p-3 rounded-lg border border-rose-200 text-center">
+                        <p class="text-[10px] font-bold uppercase text-rose-700">Kondisi Rusak</p>
+                        <p id="returnCalcRusak" class="text-base font-extrabold text-rose-800 mt-0.5">0 Unit</p>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeReturnModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="button" onclick="submitReturnLoan()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition">Selesaikan Pengembalian</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT PEMINJAMAN -->
+    <div id="editLoanModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-slate-900 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Edit Data Peminjaman / BHP</h3>
+                <button onclick="closeEditLoanModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="editLoanForm" onsubmit="saveEditedLoan(event)" class="p-6 space-y-3.5 text-xs">
+                <input type="hidden" id="editLoanId" value="">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Nama Pemohon / Guru</label>
+                    <input type="text" id="editLoanPeminjam" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Materi Pembelajaran</label>
+                    <input type="text" id="editLoanTopik" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Kelas</label>
+                    <select id="editLoanKelas" onchange="checkEditKelasManual()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 mb-1.5">
+                        <!-- Populated dynamically -->
+                    </select>
+                    <input type="text" id="editLoanKelasManual" placeholder="Ketik kelas lainnya secara manual..." class="hidden w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Tanggal Peminjaman</label>
+                    <input type="date" id="editLoanTglPinjam" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeEditLoanModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH / EDIT INVENTARIS -->
+    <div id="inventarisModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100">
+            <div class="bg-slate-900 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="inventarisModalTitle" class="text-sm font-bold">Tambah Inventaris Baru</h3>
+                <button onclick="closeInventarisModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="inventarisForm" onsubmit="saveInventaris(event)" class="p-6 space-y-3.5 text-xs">
+                <input type="hidden" id="invEditIndex" value="">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Kode Barang</label>
+                        <input type="text" id="invKode" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="INV-TKJ-001">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Nama Barang</label>
+                        <input type="text" id="invNama" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Switch Cisco">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Spesifikasi / Detail</label>
+                    <input type="text" id="invSpesifikasi" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Cisco Catalyst 24 Port">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Jumlah Unit (Baik)</label>
+                        <input type="number" id="invJumlah" min="1" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Harga Satuan (Rp)</label>
+                        <input type="number" id="invHarga" min="0" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="1500000">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Tanggal Datang</label>
+                        <input type="date" id="invTanggal" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Sumber Dana</label>
+                        <select id="invSumber" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            <option value="BOS Reguler">BOS Reguler</option>
+                            <option value="BOSDA">BOSDA</option>
+                            <option value="Yayasan Yadika">Yayasan Yadika</option>
+                            <option value="Bantuan Pemerintah">Bantuan Pemerintah</option>
+                            <option value="Komite Sekolah">Komite Sekolah</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Lokasi Penyimpanan</label>
+                        <input type="text" id="invLokasi" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Rak A / Lemari Lab TKJ">
+                    </div>
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeInventarisModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition">Simpan Barang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CATAT INVENTARIS RUSAK -->
+    <div id="rusakModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="bg-rose-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="text-sm font-bold">Catat Inventaris Rusak / Perbaikan</h3>
+                <button onclick="closeRusakModal()" class="text-rose-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="rusakForm" onsubmit="saveRusakItem(event)" class="p-6 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Pilih Barang Inventaris</label>
+                    <select id="rusakBarangId" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-600">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Jumlah Unit Rusak</label>
+                    <input type="number" id="rusakJumlah" min="1" value="1" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-600">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Tanggal Kerusakan / Masuk Servis</label>
+                    <input type="date" id="rusakTanggal" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-600">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Keterangan / Detail Kerusakan</label>
+                    <textarea id="rusakKeterangan" rows="3" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-600" placeholder="Contoh: Mati total, Layar bergaris, Port LAN tidak berfungsi..."></textarea>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Status Penanganan</label>
+                    <select id="rusakStatus" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-600">
+                        <option value="Dalam Perbaikan (Servis)">Dalam Perbaikan (Servis)</option>
+                        <option value="Rusak Berat / Belum Diperbaiki">Rusak Berat / Belum Diperbaiki</option>
+                    </select>
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeRusakModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg shadow-sm transition">Simpan Data Rusak</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH BHP -->
+    <div id="bhpModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100">
+            <div class="bg-emerald-800 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="bhpModalTitle" class="text-sm font-bold">Tambah Bahan Habis Pakai (BHP)</h3>
+                <button onclick="closeBhpModal()" class="text-emerald-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="bhpForm" onsubmit="saveBhp(event)" class="p-6 space-y-3.5 text-xs">
+                <input type="hidden" id="bhpEditIndex" value="">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Nama Bahan / Komponen</label>
+                    <input type="text" id="bhpNama" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Konektor RJ45">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">Spesifikasi / Detail</label>
+                    <input type="text" id="bhpSpesifikasi" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Cat6 Shielded / Gold Plated AMP">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Stok Awal</label>
+                        <input type="number" id="bhpStok" min="0" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="100">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Satuan</label>
+                        <input type="text" id="bhpSatuan" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Pcs / Meter / Box">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Harga Satuan (Rp)</label>
+                        <input type="number" id="bhpHarga" min="0" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="2500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Tanggal Datang</label>
+                        <input type="date" id="bhpTanggal" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Sumber Dana</label>
+                        <select id="bhpSumber" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                            <option value="BOS Reguler">BOS Reguler</option>
+                            <option value="BOSDA">BOSDA</option>
+                            <option value="Yayasan Yadika">Yayasan Yadika</option>
+                            <option value="Bantuan Pemerintah">Bantuan Pemerintah</option>
+                            <option value="Komite Sekolah">Komite Sekolah</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Lokasi Penyimpanan</label>
+                        <input type="text" id="bhpLokasi" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Lemari Gudang BHP Lab">
+                    </div>
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeBhpModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition">Simpan BHP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Aplikasi -->
+    <script>
+        const defaultInventaris = [
+            { id: 1, kode: 'INV-TKJ-01', nama: 'MIKROTIK', spesifikasi: 'MIKROTIK ROUTER WIRELESS RB951Ui-2HND', jumlah: 5, harga: 1365300, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 2, kode: 'INV-TKJ-02', nama: 'Switch 24 Port', spesifikasi: 'TP-Link Switch HUB 24-Port Gigabit-TL-SG1024D', jumlah: 4, harga: 2741700, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'LAB.SOFTWARE 1' },
+            { id: 3, kode: 'INV-TKJ-03', nama: 'Crimping Tool', spesifikasi: 'Crimping Tool Triple BOSI D3468', jumlah: 10, harga: 172050, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 4, kode: 'INV-TKJ-04', nama: 'Access Point', spesifikasi: 'TP-LINK TL-WR840N 300MBps Wireless', jumlah: 5, harga: 249750, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 5, kode: 'INV-TKJ-05', nama: 'Obeng - & +', spesifikasi: 'Obeng Deli 2-in-1 Screwdriver (Warna Kuning)', jumlah: 10, harga: 127650, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 6, kode: 'INV-TKJ-06', nama: 'SSD', spesifikasi: 'Ramos SSD SATA 512GB', jumlah: 6, harga: 388500, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 7, kode: 'INV-TKJ-07', nama: 'Cassing', spesifikasi: 'Cassing PC Simbada SIM - V', jumlah: 6, harga: 466200, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 8, kode: 'INV-TKJ-08', nama: 'PROCESSOR', spesifikasi: 'PROCESSOR CORE I3 10100', jumlah: 6, harga: 2331000, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 9, kode: 'INV-TKJ-09', nama: 'VGA Card', spesifikasi: 'VGA NVIDIA VURRION GT610', jumlah: 6, harga: 888000, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 10, kode: 'INV-TKJ-10', nama: 'RAM', spesifikasi: 'Ram DDR4 8 GB PC25600 3200Mhz V-Gen Platinum', jumlah: 6, harga: 577200, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 11, kode: 'INV-TKJ-11', nama: 'Keyboard + Mouse', spesifikasi: 'Keyboard + Mouse Logitech MK120', jumlah: 6, harga: 266400, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 12, kode: 'INV-TKJ-12', nama: 'Monitor', spesifikasi: 'LED Monitor SPC 19 Inch', jumlah: 6, harga: 1165500, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 13, kode: 'INV-TKJ-13', nama: 'Motherboard', spesifikasi: 'Motherboard MSI PRO H410M-B INTEL LGA 1200', jumlah: 6, harga: 1243200, tanggal: '2023-08-14', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' },
+            { id: 14, kode: 'INV-TKJ-14', nama: 'Komputer Rakitan', spesifikasi: 'Cassing Simbada SimV Psu 380 Watt & Core i5', jumlah: 6, harga: 7326000, tanggal: '2023-08-18', sumber: 'BOS Reguler', lokasi: 'LAB. MIKROTIK' }
+        ];
+
+        const defaultBhp = [
+            { id: 1, nama: 'Kabel UTP', spesifikasi: 'Belden CAT5E 305M', satuan: 'Roll', stok: 1, harga: 2414250, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 2, nama: 'Kabel UTP', spesifikasi: 'Vascolink CAT5E 305M', satuan: 'Roll', stok: 2, harga: 749250, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 3, nama: 'Konektor RJ45 Isi 50', spesifikasi: 'Belden CAT5E Isi 50 Pcs', satuan: 'Pack', stok: 15, harga: 127650, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 4, nama: 'Konektor RJ45 Isi 100', spesifikasi: 'Vascolink CAT5E Isi 100 Pcs', satuan: 'Pack', stok: 25, harga: 66600, tanggal: '2022-10-30', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 5, nama: 'Kabel UTP', spesifikasi: 'Vascolink Cat 5', satuan: 'Roll', stok: 2, harga: 954600, tanggal: '2024-09-17', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 6, nama: 'Kabel UTP', spesifikasi: 'Belden Cat 5', satuan: 'Roll', stok: 1, harga: 2997000, tanggal: '2024-09-17', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 7, nama: 'Konektor RJ45', spesifikasi: 'Vascolink Cat 5E Isi 100', satuan: 'Pack', stok: 80, harga: 133200, tanggal: '2024-09-17', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 8, nama: 'Kabel Coaxial', spesifikasi: 'Iterluc 0,81MM (Paket CCTV)', satuan: 'Meter', stok: 50, harga: 0, tanggal: '2024-10-24', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 9, nama: 'Alkohol', spesifikasi: 'Prokleen 70% 1 Liter', satuan: 'Liter', stok: 1, harga: 105450, tanggal: '2024-10-24', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 10, nama: 'Kabel Fiber Optic', spesifikasi: 'Vascolink Ftth Outdoor - 2 Core', satuan: 'Roll', stok: 1, harga: 1221000, tanggal: '2024-10-24', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' },
+            { id: 11, nama: 'Pigtail Paz Ori 2Mm', spesifikasi: 'Warna Kuning Biru', satuan: 'Pcs', stok: 25, harga: 22200, tanggal: '2024-10-24', sumber: 'BOS Reguler', lokasi: 'GUDANG ALAT TKJ' }
+        ];
+
+        const defaultRusak = [
+            { id: 901, barangId: 1, barangNama: 'MIKROTIK (INV-TKJ-01)', jumlah: 1, tanggal: '2026-03-20', keterangan: 'Port LAN 2 tidak merespon saat testing', status: 'Dalam Perbaikan (Servis)' }
+        ];
+
+        const defaultLoans = [
+            { id: 101, jenis: 'Inventaris', peminjam: 'Bpk. Ahmad Fauzi, S.Kom', kelas: 'Praktik Mengajar Guru', topik: 'Routing Dasar', barangId: 2, barangNama: 'Switch 24 Port', jumlah: 1, tglPinjam: '2026-04-15', tanggal: '2026-04-20', status: 'Disetujui (Dipinjam)', kondisiPulang: '-' },
+            { id: 102, jenis: 'BHP', peminjam: 'Abaabiil S', kelas: 'Kelas XI TKJ 1', topik: 'Crimping Kabel UTP', barangId: 3, barangNama: 'Konektor RJ45 Isi 50 (Pack)', jumlah: 1, tglPinjam: '2024-11-18', tanggal: '2024-11-18', status: 'Selesai (Digunakan)', kondisiPulang: 'Habis Pakai' }
+        ];
+
+        const defaultMutasi = [
+            { id: 501, kodeMutasi: 'MUT-001', barangId: 2, barangNama: 'Switch 24 Port (INV-TKJ-02)', jumlah: 1, asalLokasi: 'GUDANG ALAT TKJ', tujuanLokasi: 'LAB.SOFTWARE 1', tanggal: '2026-04-21', petugas: 'Admin Lab TKJ', keterangan: 'Distribusi perangkat ke meja praktikum siswa' }
+        ];
+
+        const defaultTeachers = [
+            { id: 1, name: 'Bpk. Ahmad Fauzi, S.Kom', username: 'ahmad', pass: 'ahmad123' },
+            { id: 2, name: 'Ibu Siti Rahma, S.T.', username: 'siti', pass: 'siti123' },
+            { id: 3, name: 'Abaabiil S', username: 'abaabiil', pass: 'abaabiil123' },
+            { id: 4, name: 'Andri W', username: 'andri', pass: 'andri123' }
+        ];
+
+        const defaultKelasList = [
+            "Praktik Mengajar Guru",
+            "Kelas XII DKV 1",
+            "Kelas XII TKJ 1",
+            "Kelas XII TKJ 2",
+            "Kelas XI TKJ 1",
+            "Kelas XI TKJ 2",
+            "Kelas X TKJ 1",
+            "Kelas X TKJ 2",
+            "Maintenance Lab"
+        ];
+
+        const defaultKopSurat = {
+            yayasan: "YAYASAN PENDIDIKAN ISLAM KARTINI (YADIKA)",
+            sekolah: "SMKS YADIKA 6 BEKASI",
+            unit: "PROGRAM KEAHLIAN: TEKNIK KOMPUTER DAN JARINGAN (TKJ)",
+            alamat: "Jl. Wibawa Mukti II, Jatisari, Jatiasih, Kota Bekasi, Jawa Barat 17426",
+            logo: "" // base64 png
+        };
+
+        const defaultSignersList = [
+            { id: 1, nama: "H. / Ibu Kepala Program, S.T.", jabatan: "Kepala Program Keahlian TKJ", nip: "19750101 200003 1 001" },
+            { id: 2, nama: "Administrator Lab TKJ", jabatan: "Penanggung Jawab Laboratorium", nip: "19900505 201803 2 005" },
+            { id: 3, nama: "Drs. H. Bambang Sutrisno, M.Pd", jabatan: "Kepala Sekolah SMKS Yadika 6", nip: "19681212 199412 1 002" }
+        ];
+
+        const defaultSignerSettings = {
+            kiriId: 1,
+            kananId: 2
+        };
+
+        let currentUser = JSON.parse(localStorage.getItem('tkj_current_user')) || null;
+        let inventarisData = JSON.parse(localStorage.getItem('tkj_inventaris')) || defaultInventaris;
+        let bhpData = JSON.parse(localStorage.getItem('tkj_bhp')) || defaultBhp;
+        let rusakData = JSON.parse(localStorage.getItem('tkj_rusak')) || defaultRusak;
+        let loanData = JSON.parse(localStorage.getItem('tkj_loans')) || defaultLoans;
+        let mutasiData = JSON.parse(localStorage.getItem('tkj_mutasi')) || defaultMutasi;
+        let teacherAccounts = JSON.parse(localStorage.getItem('tkj_teachers')) || defaultTeachers;
+        let kelasList = JSON.parse(localStorage.getItem('tkj_kelas_list')) || defaultKelasList;
+        let kopSuratData = JSON.parse(localStorage.getItem('tkj_kop_surat')) || defaultKopSurat;
+        let signersList = JSON.parse(localStorage.getItem('tkj_signers_list')) || defaultSignersList;
+        let signerSettings = JSON.parse(localStorage.getItem('tkj_signer_settings')) || defaultSignerSettings;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const tglPinjamElem = document.getElementById('loanTglPinjam');
+            if (tglPinjamElem) tglPinjamElem.value = todayStr;
+
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            const formattedDate = now.toLocaleDateString('id-ID', options);
+            document.getElementById('currentDateSignLoc').innerText = formattedDate;
+            document.getElementById('currentDateSignMutasi').innerText = formattedDate;
+            document.getElementById('currentDateSignBhp').innerText = formattedDate;
+
+            const monthOptions = { month: 'long', year: 'numeric' };
+            document.getElementById('reportBhpPeriode').innerText = now.toLocaleDateString('id-ID', monthOptions);
+
+            loadKopSuratForm();
+            loadSignersTab();
+            renderKelasDropdowns();
+
+            if (currentUser) {
+                showApp();
+            } else {
+                hideApp();
+            }
+        });
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+
+            if (u === 'admin' && p === 'admin123') {
+                currentUser = { username: 'admin', name: 'Administrator Lab TKJ', role: 'admin' };
+            } else {
+                const foundTeacher = teacherAccounts.find(t => t.username === u && t.pass === p);
+                if (foundTeacher) {
+                    currentUser = { username: foundTeacher.username, name: foundTeacher.name, role: 'guru' };
+                } else {
+                    alert('Username atau Password salah! Periksa kembali data akun Anda.');
+                    return;
+                }
+            }
+
+            localStorage.setItem('tkj_current_user', JSON.stringify(currentUser));
+            showApp();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('tkj_current_user');
+            currentUser = null;
+            hideApp();
+            document.getElementById('loginForm').reset();
+        }
+
+        function showApp() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('flex');
+            
+            document.getElementById('userNameDisplay').innerText = currentUser.name;
+            const roleBadge = document.getElementById('userRoleDisplay');
+            const portalBadge = document.getElementById('portalTitleBadge');
+
+            buildNavigationTabs();
+
+            const loanFormContainer = document.getElementById('loanFormContainer');
+            const loanContentLayout = document.getElementById('loanContentLayout');
+            const loanTableContainer = document.getElementById('loanTableContainer');
+
+            if (currentUser.role === 'admin') {
+                roleBadge.innerText = 'Hak Akses: Admin Lab';
+                roleBadge.className = 'text-[10px] bg-blue-900 text-blue-200 px-2 py-0.5 rounded-full inline-block mt-0.5 border border-blue-700 font-semibold';
+                portalBadge.innerText = 'Portal Administrator';
+                document.getElementById('btnAddInventaris').style.display = 'flex';
+                document.getElementById('btnImportInventaris').style.display = 'flex';
+                document.getElementById('btnAddBhp').style.display = 'flex';
+                document.getElementById('btnAddRusak').style.display = 'flex';
+                
+                if (loanFormContainer) loanFormContainer.style.display = 'none';
+                if (loanContentLayout) loanContentLayout.className = 'grid grid-cols-1 gap-6';
+                if (loanTableContainer) loanTableContainer.className = 'bg-white p-5 rounded-xl border border-slate-200 shadow-xs';
+
+                switchTab('inventaris');
+            } else {
+                roleBadge.innerText = 'Hak Akses: Guru Produktif';
+                roleBadge.className = 'text-[10px] bg-emerald-900 text-emerald-200 px-2 py-0.5 rounded-full inline-block mt-0.5 border border-emerald-700 font-semibold';
+                portalBadge.innerText = 'Portal Guru Praktik';
+                
+                const loanPeminjamInput = document.getElementById('loanPeminjam');
+                if (loanPeminjamInput) loanPeminjamInput.value = currentUser.name;
+
+                document.getElementById('btnAddInventaris').style.display = 'none';
+                document.getElementById('btnImportInventaris').style.display = 'none';
+                document.getElementById('btnAddBhp').style.display = 'none';
+                document.getElementById('btnAddRusak').style.display = 'none';
+                
+                if (loanFormContainer) loanFormContainer.style.display = 'block';
+                if (loanContentLayout) loanContentLayout.className = 'grid grid-cols-1 lg:grid-cols-3 gap-6';
+                if (loanTableContainer) loanTableContainer.className = 'lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-xs';
+
+                switchTab('peminjaman');
+            }
+
+            refreshAllData();
+        }
+
+        function hideApp() {
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.remove('flex');
+            document.getElementById('appContainer').classList.add('hidden');
+        }
+
+        function buildNavigationTabs() {
+            const container = document.getElementById('navTabsContainer');
+            container.innerHTML = '';
+
+            if (currentUser.role === 'admin') {
+                container.innerHTML = `
+                    <button onclick="switchTab('inventaris')" id="tabBtn-inventaris" class="pb-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-laptop"></i> Data Inventaris
+                    </button>
+                    <button onclick="switchTab('lokasi-menu')" id="tabBtn-lokasi-menu" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot"></i> Per Tempat Penyimpanan
+                    </button>
+                    <button onclick="switchTab('mutasi')" id="tabBtn-mutasi" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-right-left"></i> Mutasi Barang
+                    </button>
+                    <button onclick="switchTab('bhp')" id="tabBtn-bhp" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-packing"></i> Bahan Habis Pakai (BHP)
+                    </button>
+                    <button onclick="switchTab('rusak')" id="tabBtn-rusak" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Inventaris Rusak
+                    </button>
+                    <button onclick="switchTab('peminjaman')" id="tabBtn-peminjaman" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-file-contract"></i> Verifikasi Pengajuan
+                    </button>
+                    <button onclick="switchTab('kop-surat')" id="tabBtn-kop-surat" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines"></i> Kop Surat & Logo
+                    </button>
+                    <button onclick="switchTab('penandatangan')" id="tabBtn-penandatangan" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-signature"></i> Penandatangan
+                    </button>
+                    <button onclick="switchTab('akun')" id="tabBtn-akun" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear"></i> Akun Guru
+                    </button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="switchTab('peminjaman')" id="tabBtn-peminjaman" class="pb-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-circle-plus"></i> Ajukan Permintaan / BHP
+                    </button>
+                    <button onclick="switchTab('inventaris')" id="tabBtn-inventaris" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-laptop"></i> Cek Stok Inventaris
+                    </button>
+                    <button onclick="switchTab('bhp')" id="tabBtn-bhp" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-packing"></i> Cek Stok BHP
+                    </button>
+                    <button onclick="switchTab('rusak')" id="tabBtn-rusak" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Inventaris Rusak
+                    </button>
+                `;
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('tkj_inventaris', JSON.stringify(inventarisData));
+            localStorage.setItem('tkj_bhp', JSON.stringify(bhpData));
+            localStorage.setItem('tkj_rusak', JSON.stringify(rusakData));
+            localStorage.setItem('tkj_loans', JSON.stringify(loanData));
+            localStorage.setItem('tkj_mutasi', JSON.stringify(mutasiData));
+            localStorage.setItem('tkj_teachers', JSON.stringify(teacherAccounts));
+            localStorage.setItem('tkj_kelas_list', JSON.stringify(kelasList));
+            localStorage.setItem('tkj_kop_surat', JSON.stringify(kopSuratData));
+            localStorage.setItem('tkj_signers_list', JSON.stringify(signersList));
+            localStorage.setItem('tkj_signer_settings', JSON.stringify(signerSettings));
+            refreshAllData();
+        }
+
+        function refreshAllData() {
+            renderInventaris();
+            renderLokasiMenuDropdown();
+            renderLokasiMenuTable();
+            renderMutasiDropdown();
+            renderMutasiTable();
+            renderBhp();
+            renderRusak();
+            updateLoanItemDropdown();
+            renderRusakDropdown();
+            renderLoans();
+            renderAkunGuru();
+            renderKelasDropdowns();
+            loadSignersTab();
+            applyKopSuratAndSignersToPrintViews();
+            if (currentUser && currentUser.role === 'admin') {
+                renderLocationReport();
+                renderBhpReport();
+            }
+            updateStats();
+        }
+
+        function getRusakCountForBarang(barangId) {
+            return rusakData
+                .filter(r => r.barangId === barangId)
+                .reduce((acc, curr) => acc + parseInt(curr.jumlah), 0);
+        }
+
+        function updateStats() {
+            const totalBaik = inventarisData.reduce((acc, item) => acc + parseInt(item.jumlah), 0);
+            const totalRusak = rusakData.reduce((acc, item) => acc + parseInt(item.jumlah), 0);
+
+            document.getElementById('statTotalBaik').innerText = totalBaik;
+            document.getElementById('statTotalRusak').innerText = totalRusak;
+            document.getElementById('statTotalBhp').innerText = bhpData.length;
+            document.getElementById('statPendingLoans').innerText = loanData.filter(l => l.status === 'Menunggu Verifikasi').length;
+            document.getElementById('loanBadgeCount').innerText = `${loanData.filter(l => l.status.includes('Disetujui') || l.status.includes('Selesai')).length} Transaksi`;
+        }
+
+        function switchTab(tabName) {
+            ['inventaris', 'lokasi-menu', 'mutasi', 'bhp', 'rusak', 'peminjaman', 'kop-surat', 'penandatangan', 'akun', 'berita-acara-mutasi', 'laporan-lokasi', 'laporan-bhp'].forEach(t => {
+                const content = document.getElementById(`tabContent-${t}`);
+                const btn = document.getElementById(`tabBtn-${t}`);
+                if (content) {
+                    if (t === tabName) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                }
+                if (btn) {
+                    if (t === tabName) {
+                        btn.className = "pb-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap flex items-center gap-2";
+                    } else {
+                        btn.className = "pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2";
+                    }
+                }
+            });
+        }
+
+        // --- MANAJEMEN PILIHAN KELAS & INPUT MANUAL ---
+        function renderKelasDropdowns() {
+            const loanKelasSelect = document.getElementById('loanKelas');
+            const editLoanKelasSelect = document.getElementById('editLoanKelas');
+
+            [loanKelasSelect, editLoanKelasSelect].forEach(sel => {
+                if (!sel) return;
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">-- Pilih Kelas / Keperluan --</option>';
+                kelasList.forEach(k => {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = k;
+                    sel.appendChild(opt);
+                });
+                
+                const optLainnya = document.createElement('option');
+                optLainnya.value = 'Lainnya (Manual)';
+                optLainnya.textContent = 'Lainnya (Isi Manual)...';
+                sel.appendChild(optLainnya);
+
+                if (kelasList.includes(currentVal) || currentVal === 'Lainnya (Manual)') {
+                    sel.value = currentVal;
+                }
+            });
+            checkKelasManual();
+            checkEditKelasManual();
+        }
+
+        function checkKelasManual() {
+            const select = document.getElementById('loanKelas');
+            const inputManual = document.getElementById('loanKelasManual');
+            if (!select || !inputManual) return;
+
+            if (select.value === 'Lainnya (Manual)') {
+                inputManual.classList.remove('hidden');
+                inputManual.required = true;
+            } else {
+                inputManual.classList.add('hidden');
+                inputManual.required = false;
+                inputManual.value = '';
+            }
+        }
+
+        function checkEditKelasManual() {
+            const select = document.getElementById('editLoanKelas');
+            const inputManual = document.getElementById('editLoanKelasManual');
+            if (!select || !inputManual) return;
+
+            if (select.value === 'Lainnya (Manual)') {
+                inputManual.classList.remove('hidden');
+                inputManual.required = true;
+            } else {
+                inputManual.classList.add('hidden');
+                inputManual.required = false;
+                inputManual.value = '';
+            }
+        }
+
+        function openEditKelasModal() {
+            document.getElementById('editKelasModal').classList.remove('hidden');
+            document.getElementById('newKelasInput').value = '';
+            renderKelasListModal();
+        }
+
+        function closeEditKelasModal() {
+            document.getElementById('editKelasModal').classList.add('hidden');
+            renderKelasDropdowns();
+        }
+
+        function renderKelasListModal() {
+            const container = document.getElementById('kelasListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            kelasList.forEach((k, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-white p-2 rounded border border-slate-200 text-slate-800";
+                div.innerHTML = `
+                    <span class="font-medium">${k}</span>
+                    <button type="button" onclick="deleteKelas(${idx})" class="text-rose-600 hover:text-rose-800 px-2 py-1 rounded text-xs transition" title="Hapus Kelas"><i class="fa-solid fa-trash"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addNewKelas() {
+            const input = document.getElementById('newKelasInput');
+            const val = input.value.trim();
+            if (!val) {
+                alert('Nama kelas tidak boleh kosong!');
+                return;
+            }
+            if (kelasList.includes(val)) {
+                alert('Kelas tersebut sudah ada di dalam daftar.');
+                return;
+            }
+            kelasList.push(val);
+            input.value = '';
+            saveData();
+            renderKelasListModal();
+        }
+
+        function deleteKelas(idx) {
+            if (kelasList.length <= 1) {
+                alert('Minimal harus menyisakan 1 pilihan kelas.');
+                return;
+            }
+            if (confirm(`Hapus kelas "${kelasList[idx]}" dari daftar pilihan?`)) {
+                kelasList.splice(idx, 1);
+                saveData();
+                renderKelasListModal();
+            }
+        }
+
+        // --- PENGATURAN KOP SURAT & UPLOAD LOGO PNG ---
+        function loadKopSuratForm() {
+            document.getElementById('kopYayasan').value = kopSuratData.yayasan;
+            document.getElementById('kopSekolah').value = kopSuratData.sekolah;
+            document.getElementById('kopUnit').value = kopSuratData.unit;
+            document.getElementById('kopAlamat').value = kopSuratData.alamat;
+
+            if (kopSuratData.logo) {
+                document.getElementById('logoPreviewContainer').innerHTML = `<img src="${kopSuratData.logo}" class="w-full h-full object-contain" alt="Logo Sekolah">`;
+            }
+        }
+
+        function previewLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'image/png') {
+                alert('Format file harus berupa PNG (.png)!');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                kopSuratData.logo = e.target.result;
+                document.getElementById('logoPreviewContainer').innerHTML = `<img src="${kopSuratData.logo}" class="w-full h-full object-contain" alt="Logo Sekolah">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveKopSurat(e) {
+            e.preventDefault();
+            kopSuratData.yayasan = document.getElementById('kopYayasan').value.trim();
+            kopSuratData.sekolah = document.getElementById('kopSekolah').value.trim();
+            kopSuratData.unit = document.getElementById('kopUnit').value.trim();
+            kopSuratData.alamat = document.getElementById('kopAlamat').value.trim();
+
+            saveData();
+            alert('Pengaturan kop surat dan logo sekolah berhasil disimpan!');
+        }
+
+        // --- MANAJEMEN PENANDATANGAN (TAMBAH, EDIT, HAPUS, & DEFAULT) ---
+        function loadSignersTab() {
+            const tbody = document.getElementById('signersTableBody');
+            const selectKiri = document.getElementById('defaultSignerKiriId');
+            const selectKanan = document.getElementById('defaultSignerKananId');
+            if (!tbody || !selectKiri || !selectKanan) return;
+
+            tbody.innerHTML = '';
+            selectKiri.innerHTML = '';
+            selectKanan.innerHTML = '';
+
+            if (signersList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada pejabat penandatangan terdaftar.</td></tr>`;
+            }
+
+            signersList.forEach(s => {
+                // Render Table Row
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-3 border-b border-slate-200 font-bold text-slate-900">${s.nama}</td>
+                    <td class="p-3 border-b border-slate-200 text-slate-700">${s.jabatan}</td>
+                    <td class="p-3 border-b border-slate-200 font-mono text-slate-600">${s.nip}</td>
+                    <td class="p-3 border-b border-slate-200 text-center space-x-1">
+                        <button onclick="openSignerModal(${s.id})" class="text-blue-600 hover:text-blue-800 p-1.5 rounded transition" title="Edit Pejabat"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteSigner(${s.id})" class="text-rose-600 hover:text-rose-800 p-1.5 rounded transition" title="Hapus Pejabat"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Render Select Options
+                const opt1 = document.createElement('option');
+                opt1.value = s.id;
+                opt1.textContent = `${s.nama} (${s.jabatan})`;
+                selectKiri.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = s.id;
+                opt2.textContent = `${s.nama} (${s.jabatan})`;
+                selectKanan.appendChild(opt2);
+            });
+
+            selectKiri.value = signerSettings.kiriId;
+            selectKanan.value = signerSettings.kananId;
+        }
+
+        function openSignerModal(id = null) {
+            document.getElementById('signerModal').classList.remove('hidden');
+            const form = document.getElementById('signerForm');
+            form.reset();
+
+            if (id) {
+                document.getElementById('signerModalTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> Edit Pejabat Penandatangan';
+                document.getElementById('signerEditId').value = id;
+                const signer = signersList.find(s => s.id === id);
+                if (signer) {
+                    document.getElementById('signerInputNama').value = signer.nama;
+                    document.getElementById('signerInputJabatan').value = signer.jabatan;
+                    document.getElementById('signerInputNip').value = signer.nip;
+                }
+            } else {
+                document.getElementById('signerModalTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Tambah Pejabat Penandatangan Baru';
+                document.getElementById('signerEditId').value = '';
+            }
+        }
+
+        function closeSignerModal() {
+            document.getElementById('signerModal').classList.add('hidden');
+        }
+
+        function saveSignerItem(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('signerEditId').value;
+            const nama = document.getElementById('signerInputNama').value.trim();
+            const jabatan = document.getElementById('signerInputJabatan').value.trim();
+            const nip = document.getElementById('signerInputNip').value.trim();
+
+            if (idVal) {
+                const s = signersList.find(item => item.id === parseInt(idVal));
+                if (s) {
+                    s.nama = nama;
+                    s.jabatan = jabatan;
+                    s.nip = nip;
+                }
+            } else {
+                const newSigner = {
+                    id: Date.now(),
+                    nama: nama,
+                    jabatan: jabatan,
+                    nip: nip
+                };
+                signersList.push(newSigner);
+            }
+
+            saveData();
+            closeSignerModal();
+            alert('Data pejabat penandatangan berhasil disimpan!');
+        }
+
+        function deleteSigner(id) {
+            if (signersList.length <= 1) {
+                alert('Minimal harus menyisakan 1 pejabat penandatangan di dalam sistem.');
+                return;
+            }
+            if (confirm('Hapus pejabat penandatangan ini dari daftar?')) {
+                signersList = signersList.filter(s => s.id !== id);
+                if (signerSettings.kiriId === id) {
+                    signerSettings.kiriId = signersList[0].id;
+                }
+                if (signerSettings.kananId === id) {
+                    signerSettings.kananId = signersList[0].id;
+                }
+                saveData();
+            }
+        }
+
+        function updateSignerDefaultSelection() {
+            signerSettings.kiriId = parseInt(document.getElementById('defaultSignerKiriId').value);
+            signerSettings.kananId = parseInt(document.getElementById('defaultSignerKananId').value);
+        }
+
+        function saveSignerDefaults() {
+            updateSignerDefaultSelection();
+            saveData();
+            alert('Pengaturan pejabat default penandatangan dokumen berhasil disimpan!');
+        }
+
+        function applyKopSuratAndSignersToPrintViews() {
+            document.querySelectorAll('.printYayasan').forEach(el => el.innerText = kopSuratData.yayasan);
+            document.querySelectorAll('.printSekolah').forEach(el => el.innerText = kopSuratData.sekollah || kopSuratData.sekolah);
+            document.querySelectorAll('.printUnit').forEach(el => el.innerText = kopSuratData.unit);
+            document.querySelectorAll('.printAlamat').forEach(el => el.innerText = kopSuratData.alamat);
+
+            const logoHtml = kopSuratData.logo 
+                ? `<img src="${kopSuratData.logo}" class="w-full h-full object-contain" alt="Logo">` 
+                : `<div class="border border-dashed border-slate-400 w-full h-full flex items-center justify-center text-[9px] text-slate-400 text-center font-bold">LOGO</div>`;
+
+            ['printLogoContainerMutasi', 'printLogoContainerLoc', 'printLogoContainerBhp'].forEach(containerId => {
+                const container = document.getElementById(containerId);
+                if (container) container.innerHTML = logoHtml;
+            });
+
+            const signerKiri = signersList.find(s => s.id === signerSettings.kiriId) || signersList[0] || { nama: '...', jabatan: '...', nip: '...' };
+            const signerKanan = signersList.find(s => s.id === signerSettings.kananId) || signersList[1] || signersList[0] || { nama: '...', jabatan: '...', nip: '...' };
+
+            document.querySelectorAll('.printSignKiriNama').forEach(el => el.innerText = signerKiri.nama);
+            document.querySelectorAll('.printSignKiriJabatan').forEach(el => el.innerText = signerKiri.jabatan);
+            document.querySelectorAll('.printSignKiriNip').forEach(el => el.innerText = signerKiri.nip);
+
+            document.querySelectorAll('.printSignKananNama').forEach(el => el.innerText = signerKanan.nama);
+            document.querySelectorAll('.printSignKananJabatan').forEach(el => el.innerText = signerKanan.jabatan);
+            document.querySelectorAll('.printSignKananNip').forEach(el => el.innerText = signerKanan.nip);
+        }
+
+        // --- FITUR DOWNLOAD TEMPLATE & IMPORT EXCEL ---
+        function downloadExcelTemplate() {
+            const templateData = [
+                { kode: "INV-TKJ-01", nama: "Contoh: Router Mikrotik", spesifikasi: "RB951Ui-2HND", jumlah: 5, harga: 1350000, tanggal: "2026-01-10", sumber: "BOS Reguler", lokasi: "GUDANG ALAT TKJ" },
+                { kode: "INV-TKJ-02", nama: "Contoh: Switch Hub", spesifikasi: "TP-Link 24 Port Gigabit", jumlah: 2, harga: 2750000, tanggal: "2026-02-15", sumber: "BOSDA", lokasi: "LAB. SOFTWARE 1" }
+            ];
+
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template Inventaris");
+            XLSX.writeFile(wb, "Template_Import_Inventaris_TKJ.xlsx");
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+            document.getElementById('excelFileInput').value = '';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+        }
+
+        function processExcelImport() {
+            const fileInput = document.getElementById('excelFileInput');
+            if (fileInput.files.length === 0) {
+                alert('Pilih file Excel atau CSV terlebih dahulu!');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (jsonRows.length === 0) {
+                        alert('File kosong atau format tidak sesuai dengan template!');
+                        return;
+                    }
+
+                    let importedCount = 0;
+                    jsonRows.forEach(row => {
+                        const newInv = {
+                            id: Date.now() + Math.floor(Math.random() * 1000),
+                            kode: row.kode || row.KODE || row['Kode Barang'] || ('INV-IMP-' + Math.floor(100 + Math.random() * 900)),
+                            nama: row.nama || row.NAMA || row['Nama Barang'] || 'Barang Import',
+                            spesifikasi: row.spesifikasi || row.SPESIFIKASI || row['Spesifikasi'] || '-',
+                            jumlah: parseInt(row.jumlah || row.JUMLAH || row['Jumlah Unit'] || 1),
+                            harga: parseFloat(row.harga || row.HARGA || row['Harga Satuan'] || 0),
+                            tanggal: row.tanggal || row.TANGGAL || row['Tanggal Datang'] || new Date().toISOString().split('T')[0],
+                            sumber: row.sumber || row.SUMBER || row['Sumber Dana'] || 'BOS Reguler',
+                            lokasi: row.lokasi || row.LOKASI || row['Lokasi Penyimpanan'] || 'GUDANG ALAT TKJ'
+                        };
+                        inventarisData.push(newInv);
+                        importedCount++;
+                    });
+
+                    saveData();
+                    closeImportModal();
+                    alert(`Berhasil mengimport ${importedCount} data inventaris ke dalam aplikasi!`);
+                } catch (err) {
+                    console.error(err);
+                    alert('Terjadi kesalahan saat membaca file. Pastikan format Excel sesuai dengan template.');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- MANAJEMEN AKUN GURU ---
+        function renderAkunGuru() {
+            const tbody = document.getElementById('tableAkunBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (teacherAccounts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada akun guru yang terdaftar.</td></tr>`;
+                return;
+            }
+
+            teacherAccounts.forEach((acc) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3.5 pl-5 font-semibold text-slate-800"><i class="fa-solid fa-chalkboard-user text-indigo-600 mr-1.5"></i> ${acc.name}</td>
+                    <td class="p-3.5"><code class="bg-slate-100 px-2 py-1 rounded text-slate-800 font-mono font-bold">${acc.username}</code></td>
+                    <td class="p-3.5"><code class="bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono">${acc.pass}</code></td>
+                    <td class="p-3.5 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Guru Produktif</span>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="deleteAkunGuru(${acc.id})" class="text-rose-600 hover:text-rose-800 p-1.5 rounded transition" title="Hapus Akun"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openAkunModal() {
+            document.getElementById('akunModal').classList.remove('hidden');
+            document.getElementById('akunForm').reset();
+        }
+
+        function closeAkunModal() {
+            document.getElementById('akunModal').classList.add('hidden');
+        }
+
+        function saveAkunGuru(e) {
+            e.preventDefault();
+            const newAcc = {
+                id: Date.now(),
+                name: document.getElementById('akunNama').value.trim(),
+                username: document.getElementById('akunUsername').value.trim(),
+                pass: document.getElementById('akunPassword').value.trim()
+            };
+
+            if (teacherAccounts.some(t => t.username === newAcc.username)) {
+                alert('Username tersebut sudah digunakan. Silakan gunakan username lain.');
+                return;
+            }
+
+            teacherAccounts.push(newAcc);
+            saveData();
+            closeAkunModal();
+            alert('Akun guru berhasil ditambahkan!');
+        }
+
+        function deleteAkunGuru(id) {
+            if (confirm('Hapus akun guru ini? Guru tidak akan dapat login menggunakan akun tersebut.')) {
+                teacherAccounts = teacherAccounts.filter(t => t.id !== id);
+                saveData();
+            }
+        }
+
+        // --- RENDER INVENTARIS ---
+        function renderInventaris() {
+            const keyword = document.getElementById('searchInventaris').value.toLowerCase();
+            const tbody = document.getElementById('tableInventarisBody');
+            tbody.innerHTML = '';
+
+            const filtered = inventarisData.filter(item => item.nama.toLowerCase().includes(keyword) || item.kode.toLowerCase().includes(keyword) || item.spesifikasi.toLowerCase().includes(keyword));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada data inventaris ditemukan.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach((item) => {
+                const jmlBaik = item.jumlah;
+                const jmlRusak = getRusakCountForBarang(item.id);
+                const totalHarga = jmlBaik * item.harga;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3.5 pl-5">
+                        <span class="font-mono font-bold text-slate-900 block">${item.kode}</span>
+                        <span class="text-slate-700 font-medium">${item.nama}</span>
+                    </td>
+                    <td class="p-3.5 text-slate-500">${item.spesifikasi}</td>
+                    <td class="p-3.5 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${jmlBaik} Unit</span>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${jmlRusak > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-slate-100 text-slate-600'}">${jmlRusak} Unit</span>
+                    </td>
+                    <td class="p-3.5">
+                        <span class="block text-slate-800">${formatRupiah(item.harga)}</span>
+                        <span class="text-[10px] text-blue-600 font-semibold">Total (Baik): ${formatRupiah(totalHarga)}</span>
+                    </td>
+                    <td class="p-3.5">
+                        <span class="block text-slate-700 font-semibold">${item.sumber}</span>
+                        <span class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot"></i> ${item.lokasi}</span>
+                    </td>
+                    <td class="p-3.5 text-center space-x-1">
+                        ${currentUser.role === 'admin' ? `
+                            <button onclick="editInventaris(${item.id})" class="text-blue-600 hover:text-blue-800 p-1 rounded transition" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteInventaris(${item.id})" class="text-rose-600 hover:text-rose-800 p-1 rounded transition" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                        ` : `<span class="text-blue-600 font-medium text-[10px]">Tersedia</span>`}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- RENDER MENU INVENTARIS PER TEMPAT PENYIMPANAN ---
+        function renderLokasiMenuDropdown() {
+            const select = document.getElementById('filterLokasiSelect');
+            if (!select) return;
+            
+            const currentVal = select.value;
+            select.innerHTML = '<option value="ALL">-- Tampilkan Semua Lokasi --</option>';
+
+            const locations = [...new Set(inventarisData.map(i => i.lokasi || 'Tidak Diketahui'))];
+            locations.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc;
+                opt.textContent = loc;
+                select.appendChild(opt);
+            });
+
+            select.value = locations.includes(currentVal) ? currentVal : 'ALL';
+        }
+
+        function renderLokasiMenuTable() {
+            const tbody = document.getElementById('tableLocMenuBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const selectedLoc = document.getElementById('filterLokasiSelect').value;
+
+            let locationMap = {};
+            inventarisData.forEach(item => {
+                const loc = item.lokasi || 'Tidak Diketahui';
+                if (selectedLoc === 'ALL' || loc === selectedLoc) {
+                    if (!locationMap[loc]) {
+                        locationMap[loc] = [];
+                    }
+                    locationMap[loc].push(item);
+                }
+            });
+
+            const locations = Object.keys(locationMap);
+            document.getElementById('locMenuStatTotalLoc').innerText = locations.length;
+
+            let totalUnitsAll = 0;
+            let totalValAll = 0;
+
+            if (locations.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Tidak ada data inventaris untuk lokasi ini.</td></tr>`;
+                document.getElementById('locMenuStatTotalUnit').innerText = 0;
+                document.getElementById('locMenuStatTotalVal').innerText = formatRupiah(0);
+                return;
+            }
+
+            locations.forEach((loc) => {
+                const itemsInLoc = locationMap[loc];
+                let totalUnitInLoc = 0;
+                let totalValInLoc = 0;
+                let itemsHtml = '<ul class="space-y-1.5 py-1">';
+
+                itemsInLoc.forEach(i => {
+                    const subVal = i.jumlah * i.harga;
+                    totalUnitInLoc += i.jumlah;
+                    totalValInLoc += subVal;
+                    itemsHtml += `
+                        <li class="flex items-center justify-between border-b border-slate-100 pb-1 last:border-0">
+                            <div>
+                                <span class="font-bold text-slate-800">${i.nama}</span> <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${i.kode}</code>
+                                <p class="text-[10px] text-slate-500">${i.spesifikasi} &bull; Sumber: <b>${i.sumber}</b></p>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-semibold text-emerald-700">${i.jumlah} Unit</span>
+                                <p class="text-[10px] text-slate-500">${formatRupiah(subVal)}</p>
+                            </div>
+                        </li>
+                    `;
+                });
+                itemsHtml += '</ul>';
+
+                totalUnitsAll += totalUnitInLoc;
+                totalValAll += totalValInLoc;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition align-top";
+                tr.innerHTML = `
+                    <td class="p-3.5 pl-5 font-bold text-slate-900 w-1/4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-location-dot"></i>
+                            </div>
+                            <span>${loc}</span>
+                        </div>
+                    </td>
+                    <td class="p-3.5 w-2/5">${itemsHtml}</td>
+                    <td class="p-3.5 text-center font-bold text-emerald-700 w-1/6 align-middle">${totalUnitInLoc} Unit</td>
+                    <td class="p-3.5 text-right font-bold text-blue-800 pr-5 w-1/5 align-middle">${formatRupiah(totalValInLoc)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('locMenuStatTotalUnit').innerText = totalUnitsAll;
+            document.getElementById('locMenuStatTotalVal').innerText = formatRupiah(totalValAll);
+        }
+
+        // --- MANAJEMEN MUTASI BARANG & BERITA ACARA ---
+        function renderMutasiDropdown() {
+            const select = document.getElementById('mutasiBarangId');
+            if (!select) return;
+            select.innerHTML = '';
+
+            inventarisData.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = `[${item.kode}] ${item.nama} (Lokasi: ${item.lokasi || 'Belum diatur'}, Stok: ${item.jumlah} Unit)`;
+                select.appendChild(opt);
+            });
+            onMutasiBarangChange();
+        }
+
+        function onMutasiBarangChange() {
+            const select = document.getElementById('mutasiBarangId');
+            const asalInput = document.getElementById('mutasiAsalLokasi');
+            if (!select || !asalInput) return;
+
+            const selectedId = parseInt(select.value);
+            const item = inventarisData.find(i => i.id === selectedId);
+            if (item) {
+                asalInput.value = item.lokasi || 'Tidak Diketahui';
+            }
+        }
+
+        function openMutasiModal() {
+            document.getElementById('mutasiModal').classList.remove('hidden');
+            document.getElementById('mutasiForm').reset();
+            document.getElementById('mutasiTanggal').valueAsDate = new Date();
+            renderMutasiDropdown();
+        }
+
+        function closeMutasiModal() {
+            document.getElementById('mutasiModal').classList.add('hidden');
+        }
+
+        function saveMutasiItem(e) {
+            e.preventDefault();
+            const barangId = parseInt(document.getElementById('mutasiBarangId').value);
+            const barangObj = inventarisData.find(i => i.id === barangId);
+            const jumlahMutasi = parseInt(document.getElementById('mutasiJumlah').value);
+            const tujuanLokasi = document.getElementById('mutasiTujuanLokasi').value.trim();
+
+            if (!barangObj) return;
+
+            if (jumlahMutasi > barangObj.jumlah) {
+                alert(`Jumlah unit yang dimutasi melebihi stok tersedia (${barangObj.jumlah} unit).`);
+                return;
+            }
+
+            const asalLokasi = barangObj.lokasi || 'Tidak Diketahui';
+            let targetItemId = barangObj.id;
+
+            if (jumlahMutasi === barangObj.jumlah) {
+                barangObj.lokasi = tujuanLokasi;
+            } else {
+                barangObj.jumlah -= jumlahMutasi;
+                const newItem = {
+                    id: Date.now(),
+                    kode: barangObj.kode + '-MUT',
+                    nama: barangObj.nama,
+                    spesifikasi: barangObj.spesifikasi,
+                    jumlah: jumlahMutasi,
+                    harga: barangObj.harga,
+                    tanggal: barangObj.tanggal,
+                    sumber: barangObj.sumber,
+                    lokasi: tujuanLokasi
+                };
+                inventarisData.push(newItem);
+                targetItemId = newItem.id;
+            }
+
+            const newMutasi = {
+                id: Date.now(),
+                kodeMutasi: 'MUT-' + Math.floor(100 + Math.random() * 900),
+                barangId: barangId,
+                targetItemId: targetItemId,
+                barangNama: `${barangObj.nama} (${barangObj.kode})`,
+                jumlah: jumlahMutasi,
+                asalLokasi: asalLokasi,
+                tujuanLokasi: tujuanLokasi,
+                tanggal: document.getElementById('mutasiTanggal').value,
+                petugas: document.getElementById('mutasiPetugas').value.trim(),
+                keterangan: document.getElementById('mutasiKeterangan').value.trim()
+            };
+
+            mutasiData.push(newMutasi);
+            saveData();
+            closeMutasiModal();
+            alert('Mutasi barang inventaris berhasil dicatat dan lokasi aset telah diperbarui.');
+        }
+
+        function deleteMutasi(id) {
+            if (confirm('Batalkan dan hapus riwayat mutasi ini? Stok barang dan tempat penyimpanan akan dikembalikan seperti semula ke lokasi awal sebelum dimutasi.')) {
+                const mutasiObj = mutasiData.find(m => m.id === id);
+                if (mutasiObj) {
+                    const targetItem = inventarisData.find(i => i.id === (mutasiObj.targetItemId || mutasiObj.barangId));
+                    const originItem = inventarisData.find(i => i.id === mutasiObj.barangId);
+
+                    if (targetItem && originItem && targetItem.id !== originItem.id) {
+                        originItem.jumlah += mutasiObj.jumlah;
+                        inventarisData = inventarisData.filter(i => i.id !== targetItem.id);
+                    } else if (originItem) {
+                        originItem.lokasi = mutasiObj.asalLokasi;
+                    }
+                }
+
+                mutasiData = mutasiData.filter(m => m.id !== id);
+                saveData();
+                alert('Mutasi dibatalkan. Stok dan tempat penyimpanan berhasil dikembalikan ke kondisi awal.');
+            }
+        }
+
+        function cetakBeritaAcaraMutasi(id) {
+            const m = mutasiData.find(item => item.id === id);
+            if (!m) return;
+
+            document.getElementById('baMutasiNomor').innerText = `${m.kodeMutasi}/BA-MUT/LAB-TKJ/IV/2026`;
+            
+            const dateObj = new Date(m.tanggal);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('baMutasiHariTanggal').innerText = dateObj.toLocaleDateString('id-ID', options);
+
+            document.getElementById('baMutasiBarangNama').innerText = m.barangNama;
+            document.getElementById('baMutasiJumlahUnit').innerText = `${m.jumlah} Unit`;
+            document.getElementById('baMutasiAsalLokasi').innerText = m.asalLokasi;
+            document.getElementById('baMutasiTujuanLokasi').innerText = m.tujuanLokasi;
+            document.getElementById('baMutasiKeterangan').innerText = m.keterangan;
+
+            switchTab('berita-acara-mutasi');
+        }
+
+        function renderMutasiTable() {
+            const tbody = document.getElementById('tableMutasiBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (mutasiData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada riwayat mutasi barang inventaris.</td></tr>`;
+                return;
+            }
+
+            mutasiData.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3.5 pl-5">
+                        <span class="font-mono font-bold text-blue-700 block">${m.kodeMutasi}</span>
+                        <span class="text-[10px] text-slate-500"><i class="fa-regular fa-calendar"></i> ${m.tanggal}</span>
+                    </td>
+                    <td class="p-3.5 font-semibold text-slate-800">${m.barangNama}</td>
+                    <td class="p-3.5 text-center font-bold text-emerald-700">${m.jumlah} Unit</td>
+                    <td class="p-3.5">
+                        <span class="text-slate-500 line-through">${m.asalLokasi}</span> 
+                        <i class="fa-solid fa-arrow-right text-blue-600 mx-1"></i> 
+                        <span class="font-bold text-slate-900">${m.tujuanLokasi}</span>
+                    </td>
+                    <td class="p-3.5">
+                        <span class="block text-slate-700">${m.keterangan}</span>
+                        <span class="text-[10px] text-slate-500">Petugas: <b>${m.petugas}</b></span>
+                    </td>
+                    <td class="p-3.5 text-center space-x-1 whitespace-nowrap">
+                        <button onclick="cetakBeritaAcaraMutasi(${m.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-[10px] font-bold transition shadow-xs" title="Cetak Berita Acara"><i class="fa-solid fa-file-lines mr-1"></i> Berita Acara</button>
+                        <button onclick="deleteMutasi(${m.id})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-1 rounded text-[10px] font-bold transition" title="Batalkan & Kembalikan"><i class="fa-solid fa-rotate-left"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openInventarisModal(isEdit = false, id = null) {
+            document.getElementById('inventarisModal').classList.remove('hidden');
+            if (isEdit) {
+                document.getElementById('inventarisModalTitle').innerText = 'Edit Data Inventaris';
+                const item = inventarisData.find(i => i.id === id);
+                document.getElementById('invEditIndex').value = item.id;
+                document.getElementById('invKode').value = item.kode;
+                document.getElementById('invNama').value = item.nama;
+                document.getElementById('invSpesifikasi').value = item.spesifikasi;
+                document.getElementById('invJumlah').value = item.jumlah;
+                document.getElementById('invHarga').value = item.harga;
+                document.getElementById('invTanggal').value = item.tanggal;
+                document.getElementById('invSumber').value = item.sumber;
+                document.getElementById('invLokasi').value = item.lokasi;
+            } else {
+                document.getElementById('inventarisModalTitle').innerText = 'Tambah Inventaris Baru';
+                document.getElementById('inventarisForm').reset();
+                document.getElementById('invEditIndex').value = '';
+                document.getElementById('invTanggal').valueAsDate = new Date();
+            }
+        }
+
+        function closeInventarisModal() {
+            document.getElementById('inventarisModal').classList.add('hidden');
+        }
+
+        function saveInventaris(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('invEditIndex').value;
+            const newItem = {
+                id: idVal ? parseInt(idVal) : Date.now(),
+                kode: document.getElementById('invKode').value,
+                nama: document.getElementById('invNama').value,
+                spesifikasi: document.getElementById('invSpesifikasi').value,
+                jumlah: parseInt(document.getElementById('invJumlah').value),
+                harga: parseFloat(document.getElementById('invHarga').value),
+                tanggal: document.getElementById('invTanggal').value,
+                sumber: document.getElementById('invSumber').value,
+                lokasi: document.getElementById('invLokasi').value
+            };
+
+            if (idVal) {
+                const idx = inventarisData.findIndex(i => i.id === parseInt(idVal));
+                inventarisData[idx] = newItem;
+            } else {
+                inventarisData.push(newItem);
+            }
+
+            saveData();
+            closeInventarisModal();
+        }
+
+        function editInventaris(id) {
+            openInventarisModal(true, id);
+        }
+
+        function deleteInventaris(id) {
+            if (confirm('Hapus barang inventaris ini?')) {
+                inventarisData = inventarisData.filter(i => i.id !== id);
+                saveData();
+            }
+        }
+
+
+        // --- RENDER BHP ---
+        function renderBhp() {
+            const keyword = document.getElementById('searchBhp').value.toLowerCase();
+            const tbody = document.getElementById('tableBhpBody');
+            tbody.innerHTML = '';
+
+            const filtered = bhpData.filter(item => item.nama.toLowerCase().includes(keyword) || item.spesifikasi.toLowerCase().includes(keyword) || item.satuan.toLowerCase().includes(keyword));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Tidak ada data bahan habis pakai ditemukan.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                let stockBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Aman</span>';
+                if (item.stok <= 2) {
+                    stockBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-800 border border-emerald-200">Menipis</span>';
+                }
+
+                const totalHarga = item.stok * item.harga;
+
+                let actionColContent = '';
+                if (currentUser.role === 'admin') {
+                    actionColContent = `
+                        <button onclick="adjustBhpStock(${item.id}, -1)" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-1 rounded text-[10px] font-bold" title="Kurangi"><i class="fa-solid fa-minus"></i></button>
+                        <button onclick="adjustBhpStock(${item.id}, 1)" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold" title="Tambah"><i class="fa-solid fa-plus"></i></button>
+                        <button onclick="deleteBhp(${item.id})" class="text-rose-600 hover:text-rose-800 p-1 rounded ml-1" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                    `;
+                } else {
+                    actionColContent = `<span class="text-slate-400 text-[10px] italic">Stok Tersedia</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3.5 pl-5 font-semibold text-slate-800">${item.nama}</td>
+                    <td class="p-3.5 text-slate-500">${item.spesifikasi}</td>
+                    <td class="p-3.5 text-center font-bold text-slate-700">${item.stok} ${item.satuan}</td>
+                    <td class="p-3.5 text-slate-600">${item.tanggal}</td>
+                    <td class="p-3.5">
+                        <span class="block text-slate-800">${formatRupiah(item.harga)}</span>
+                        <span class="text-[10px] text-emerald-600 font-semibold">Total: ${formatRupiah(totalHarga)}</span>
+                    </td>
+                    <td class="p-3.5">
+                        <span class="block text-slate-700 font-semibold">${item.sumber}</span>
+                        <span class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot"></i> ${item.lokasi}</span>
+                    </td>
+                    <td class="p-3.5 text-center">${stockBadge}</td>
+                    <td class="p-3.5 text-center space-x-1">${actionColContent}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openBhpModal() {
+            document.getElementById('bhpModal').classList.remove('hidden');
+            document.getElementById('bhpForm').reset();
+            document.getElementById('bhpEditIndex').value = '';
+            document.getElementById('bhpTanggal').valueAsDate = new Date();
+        }
+
+        function closeBhpModal() {
+            document.getElementById('bhpModal').classList.add('hidden');
+        }
+
+        function saveBhp(e) {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                nama: document.getElementById('bhpNama').value,
+                spesifikasi: document.getElementById('bhpSpesifikasi').value,
+                satuan: document.getElementById('bhpSatuan').value,
+                stok: parseInt(document.getElementById('bhpStok').value),
+                harga: parseFloat(document.getElementById('bhpHarga').value),
+                tanggal: document.getElementById('bhpTanggal').value,
+                sumber: document.getElementById('bhpSumber').value,
+                lokasi: document.getElementById('bhpLokasi').value
+            };
+            bhpData.push(newItem);
+            saveData();
+            closeBhpModal();
+        }
+
+        function adjustBhpStock(id, amount) {
+            const item = bhpData.find(b => b.id === id);
+            if (item) {
+                if (item.stok + amount < 0) {
+                    alert('Stok tidak boleh kurang dari 0!');
+                    return;
+                }
+                item.stok += amount;
+                saveData();
+            }
+        }
+
+        function deleteBhp(id) {
+            if (confirm('Hapus bahan habis pakai ini?')) {
+                bhpData = bhpData.filter(b => b.id !== id);
+                saveData();
+            }
+        }
+
+
+        // --- RENDER INVENTARIS RUSAK & PENGURANGAN STOK ---
+        function renderRusakDropdown() {
+            const select = document.getElementById('rusakBarangId');
+            if (select) {
+                select.innerHTML = '';
+                inventarisData.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = `[${item.kode}] ${item.nama} (Tersedia: ${item.jumlah} Unit)`;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function openRusakModal() {
+            document.getElementById('rusakModal').classList.remove('hidden');
+            document.getElementById('rusakForm').reset();
+            document.getElementById('rusakTanggal').valueAsDate = new Date();
+        }
+
+        function closeRusakModal() {
+            document.getElementById('rusakModal').classList.add('hidden');
+        }
+
+        function saveRusakItem(e) {
+            e.preventDefault();
+            const barangId = parseInt(document.getElementById('rusakBarangId').value);
+            const barangObj = inventarisData.find(i => i.id === barangId);
+            const jumlahReq = parseInt(document.getElementById('rusakJumlah').value);
+
+            if (jumlahReq > barangObj.jumlah) {
+                alert(`Jumlah rusak melebihi stok yang tersedia (${barangObj.jumlah} unit).`);
+                return;
+            }
+
+            barangObj.jumlah -= jumlahReq;
+
+            const newRusak = {
+                id: Date.now(),
+                barangId: barangId,
+                barangNama: `${barangObj.nama} (${barangObj.kode})`,
+                jumlah: jumlahReq,
+                tanggal: document.getElementById('rusakTanggal').value,
+                keterangan: document.getElementById('rusakKeterangan').value,
+                status: document.getElementById('rusakStatus').value
+            };
+
+            rusakData.push(newRusak);
+            saveData();
+            closeRusakModal();
+            alert('Catatan kerusakan berhasil disimpan. Stok inventaris utama otomatis dikurangi.');
+        }
+
+        function resolveRusak(id) {
+            if (confirm('Tandai barang ini telah selesai diperbaiki dan dikembalikan ke stok normal?')) {
+                const rusakItem = rusakData.find(r => r.id === id);
+                if (rusakItem) {
+                    const invObj = inventarisData.find(i => i.id === rusakItem.barangId);
+                    if (invObj) {
+                        invObj.jumlah += rusakItem.jumlah;
+                    }
+                }
+                rusakData = rusakData.filter(r => r.id !== id);
+                saveData();
+                alert('Barang berhasil dipulihkan dan stok inventaris utama bertambah kembali.');
+            }
+        }
+
+        function deleteRusak(id) {
+            if (confirm('Hapus catatan kerusakan ini? Stok inventaris utama akan dikembalikan seperti semula.')) {
+                const rusakItem = rusakData.find(r => r.id === id);
+                if (rusakItem) {
+                    const invObj = inventarisData.find(i => i.id === rusakItem.barangId);
+                    if (invObj) {
+                        invObj.jumlah += rusakItem.jumlah;
+                    }
+                }
+                rusakData = rusakData.filter(r => r.id !== id);
+                saveData();
+                alert('Catatan rusak dihapus dan stok inventaris utama berhasil dikembalikan.');
+            }
+        }
+
+        function renderRusak() {
+            const tbody = document.getElementById('tableRusakBody');
+            tbody.innerHTML = '';
+
+            if (rusakData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada catatan inventaris rusak / perbaikan.</td></tr>`;
+                return;
+            }
+
+            rusakData.forEach(item => {
+                let badgeStatus = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Dalam Perbaikan</span>';
+                if (item.status.includes('Berat')) {
+                    badgeStatus = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-800 border border-amber-200">Rusak Berat</span>';
+                }
+
+                let actionBtns = '';
+                if (currentUser.role === 'admin') {
+                    actionBtns = `
+                        <button onclick="resolveRusak(${item.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[10px] font-medium transition" title="Selesai Servis / Kembali Normal"><i class="fa-solid fa-check"></i> Selesai / Pulih</button>
+                        <button onclick="deleteRusak(${item.id})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-1 rounded ml-1 transition" title="Hapus dan Kembalikan Stok"><i class="fa-solid fa-trash"></i> Hapus (Kembalikan Stok)</button>
+                    `;
+                } else {
+                    actionBtns = `<span class="text-slate-400 text-[10px]">Dipantau Admin</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3.5 pl-5 font-semibold text-slate-800">${item.barangNama}</td>
+                    <td class="p-3.5 text-center font-bold text-slate-700">${item.jumlah} Unit</td>
+                    <td class="p-3.5 text-slate-600">${item.tanggal}</td>
+                    <td class="p-3.5 text-slate-600">${item.keterangan}</td>
+                    <td class="p-3.5 text-center">${badgeStatus}</td>
+                    <td class="p-3.5 text-center space-x-1">${actionBtns}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        // --- PEMINJAMAN & BHP ---
+        function updateLoanItemDropdown() {
+            const jenis = document.getElementById('loanJenisKategori').value;
+            const select = document.getElementById('loanBarangId');
+            const label = document.getElementById('loanBarangLabel');
+
+            if (!select) return;
+            select.innerHTML = '';
+
+            if (jenis === 'Inventaris') {
+                label.innerHTML = 'Pilih Barang Inventaris <span class="text-rose-500">*</span>';
+                inventarisData.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = `${item.nama} (Stok Baik: ${item.jumlah} Unit)`;
+                    select.appendChild(opt);
+                });
+            } else {
+                label.innerHTML = 'Pilih Bahan Habis Pakai (BHP) <span class="text-rose-500">*</span>';
+                bhpData.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = `${item.nama} (${item.spesifikasi}) - Stok: ${item.stok} ${item.satuan}`;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function handleLoanSubmit(e) {
+            e.preventDefault();
+            const tglPinjam = document.getElementById('loanTglPinjam').value;
+            const peminjam = document.getElementById('loanPeminjam').value;
+            const topik = document.getElementById('loanTopik').value;
+            
+            let kelas = document.getElementById('loanKelas').value;
+            if (kelas === 'Lainnya (Manual)') {
+                kelas = document.getElementById('loanKelasManual').value.trim();
+                if (!kelas) {
+                    alert('Harap isi keterangan kelas / keperluan secara manual!');
+                    return;
+                }
+            }
+
+            const jenis = document.getElementById('loanJenisKategori').value;
+            const barangId = parseInt(document.getElementById('loanBarangId').value);
+            const jumlahReq = parseInt(document.getElementById('loanJumlah').value);
+
+            if (jenis === 'Inventaris') {
+                const barangObj = inventarisData.find(i => i.id === barangId);
+                if (jumlahReq > barangObj.jumlah) {
+                    alert(`Jumlah unit melebihi ketersediaan inventaris kondisi baik (${barangObj.jumlah} unit).`);
+                    return;
+                }
+                barangObj.jumlah -= jumlahReq;
+
+                const newLoan = {
+                    id: Date.now(),
+                    jenis: 'Inventaris',
+                    peminjam: peminjam,
+                    topik: topik,
+                    kelas: kelas,
+                    barangId: barangId,
+                    barangNama: barangObj.nama,
+                    jumlah: jumlahReq,
+                    tglPinjam: tglPinjam,
+                    tanggal: tglPinjam,
+                    status: 'Menunggu Verifikasi',
+                    kondisiPulang: '-'
+                };
+                loanData.push(newLoan);
+                alert('Pengajuan peminjaman alat berhasil dikirim ke Admin Lab.');
+            } else {
+                const bhpObj = bhpData.find(b => b.id === barangId);
+                if (jumlahReq > bhpObj.stok) {
+                    alert(`Jumlah permintaan melebihi stok BHP yang tersedia (${bhpObj.stok} ${bhpObj.satuan}).`);
+                    return;
+                }
+                bhpObj.stok -= jumlahReq;
+
+                const newLoan = {
+                    id: Date.now(),
+                    jenis: 'BHP',
+                    peminjam: peminjam,
+                    topik: topik,
+                    kelas: kelas,
+                    barangId: barangId,
+                    barangNama: `${bhpObj.nama} (${bhpObj.satuan})`,
+                    jumlah: jumlahReq,
+                    tglPinjam: tglPinjam,
+                    tanggal: tglPinjam,
+                    status: 'Selesai (Digunakan)',
+                    kondisiPulang: 'Habis Pakai'
+                };
+                loanData.push(newLoan);
+                alert('Pengambilan BHP berhasil dicatat. Stok BHP otomatis dikurangi.');
+            }
+
+            saveData();
+            document.getElementById('loanForm').reset();
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('loanTglPinjam').value = todayStr;
+            if (currentUser.role === 'guru') {
+                document.getElementById('loanPeminjam').value = currentUser.name;
+            }
+            updateLoanItemDropdown();
+            checkKelasManual();
+        }
+
+        function renderLoans() {
+            const tbody = document.getElementById('tableLoanBody');
+            tbody.innerHTML = '';
+
+            if (loanData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada riwayat transaksi / peminjaman.</td></tr>`;
+                return;
+            }
+
+            loanData.forEach(loan => {
+                let badgeStatus = '';
+                if (loan.jenis === 'BHP') {
+                    badgeStatus = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-boxes-packing"></i> BHP (Digunakan)</span>';
+                } else if (loan.status === 'Menunggu Verifikasi') {
+                    badgeStatus = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Menunggu Verifikasi</span>';
+                } else if (loan.status.includes('Disetujui')) {
+                    badgeStatus = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800 border border-blue-200">Disetujui (Dipinjam)</span>';
+                } else if (loan.status === 'Dikembalikan') {
+                    let kondBadge = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                    if (loan.kondisiPulang && loan.kondisiPulang.includes('Rusak')) {
+                        kondBadge = 'bg-rose-100 text-rose-800 border-rose-200';
+                    }
+                    badgeStatus = `
+                        <div class="space-y-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 block">Dikembalikan</span>
+                            <span class="px-2 py-0.5 rounded text-[9px] font-medium border ${kondBadge} inline-block">${loan.kondisiPulang}</span>
+                        </div>
+                    `;
+                } else {
+                    badgeStatus = `<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">${loan.status}</span>`;
+                }
+
+                let actionButtons = '';
+                if (currentUser.role === 'admin') {
+                    if (loan.jenis === 'BHP') {
+                        actionButtons = `
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="openEditLoanModal(${loan.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] font-medium transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteLoan(${loan.id})" class="bg-rose-100 hover:bg-rose-600 hover:text-white text-rose-700 px-2 py-1 rounded text-[10px] font-medium transition" title="Hapus & Kembalikan Stok BHP"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        `;
+                    } else if (loan.status === 'Menunggu Verifikasi') {
+                        actionButtons = `
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="updateLoanStatus(${loan.id}, 'Disetujui (Dipinjam)')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-[10px] font-medium transition" title="Setujui"><i class="fa-solid fa-check"></i></button>
+                                <button onclick="rejectAndReturnLoan(${loan.id})" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[10px] font-medium transition" title="Tolak & Kembalikan Stok"><i class="fa-solid fa-xmark"></i></button>
+                                <button onclick="openEditLoanModal(${loan.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] font-medium transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteLoan(${loan.id})" class="bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-700 px-2 py-1 rounded text-[10px] font-medium transition" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        `;
+                    } else if (loan.status.includes('Disetujui')) {
+                        actionButtons = `
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="openReturnModal(${loan.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[10px] font-medium transition" title="Selesaikan Pengembalian">Selesaikan</button>
+                                <button onclick="openEditLoanModal(${loan.id})" class="bg-slate-700 hover:bg-slate-900 text-white px-2 py-1 rounded text-[10px] font-medium transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteLoan(${loan.id})" class="bg-rose-100 hover:bg-rose-600 hover:text-white text-rose-700 px-2 py-1 rounded text-[10px] font-medium transition" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        `;
+                    } else {
+                        actionButtons = `
+                            <div class="flex items-center justify-center gap-1">
+                                <span class="text-slate-400 italic text-[10px]">Selesai</span>
+                                <button onclick="deleteLoan(${loan.id})" class="bg-rose-100 hover:bg-rose-600 hover:text-white text-rose-700 px-2 py-1 rounded text-[10px] font-medium transition" title="Hapus Riwayat"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        `;
+                    }
+                } else {
+                    actionButtons = `<span class="text-slate-400 italic text-[10px]">${loan.jenis === 'BHP' ? 'Selesai' : 'Menunggu Admin'}</span>`;
+                }
+
+                const displayTglPinjam = loan.tglPinjam || loan.tanggal;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <span class="font-semibold text-slate-800 block">${loan.peminjam}</span>
+                        <span class="text-[10px] text-slate-500">${loan.kelas} ${loan.topik ? '&bull; ' + loan.topik : ''}</span>
+                    </td>
+                    <td class="p-3 font-medium text-slate-700">${loan.barangNama}</td>
+                    <td class="p-3 text-center font-bold">${loan.jumlah} Unit</td>
+                    <td class="p-3 text-slate-600 text-[11px]">${displayTglPinjam}</td>
+                    <td class="p-3 text-center">${badgeStatus}</td>
+                    <td class="p-3 text-center">${actionButtons}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateLoanStatus(id, newStatus) {
+            const loan = loanData.find(l => l.id === id);
+            if (loan) {
+                loan.status = newStatus;
+                saveData();
+            }
+        }
+
+        function rejectAndReturnLoan(id) {
+            if (confirm('Tolak peminjaman ini? Stok barang akan dikembalikan ke inventaris.')) {
+                const loan = loanData.find(l => l.id === id);
+                if (loan) {
+                    const invObj = inventarisData.find(i => i.id === loan.barangId);
+                    if (invObj) {
+                        invObj.jumlah += loan.jumlah;
+                    }
+                    loan.status = 'Ditolak';
+                    saveData();
+                }
+            }
+        }
+
+        function openEditLoanModal(id) {
+            const loan = loanData.find(l => l.id === id);
+            if (!loan) return;
+
+            document.getElementById('editLoanId').value = loan.id;
+            document.getElementById('editLoanPeminjam').value = loan.peminjam;
+            document.getElementById('editLoanTopik').value = loan.topik || '';
+            
+            const editKelasSelect = document.getElementById('editLoanKelas');
+            const editKelasManual = document.getElementById('editLoanKelasManual');
+
+            if (kelasList.includes(loan.kelas)) {
+                editKelasSelect.value = loan.kelas;
+                editKelasManual.classList.add('hidden');
+                editKelasManual.value = '';
+            } else {
+                editKelasSelect.value = 'Lainnya (Manual)';
+                editKelasManual.classList.remove('hidden');
+                editKelasManual.value = loan.kelas;
+            }
+
+            document.getElementById('editLoanTglPinjam').value = loan.tglPinjam || loan.tanggal;
+            document.getElementById('editLoanModal').classList.remove('hidden');
+        }
+
+        function closeEditLoanModal() {
+            document.getElementById('editLoanModal').classList.add('hidden');
+        }
+
+        function saveEditedLoan(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editLoanId').value);
+            const loan = loanData.find(l => l.id === id);
+            if (loan) {
+                loan.peminjam = document.getElementById('editLoanPeminjam').value;
+                loan.topik = document.getElementById('editLoanTopik').value;
+                
+                let kelas = document.getElementById('editLoanKelas').value;
+                if (kelas === 'Lainnya (Manual)') {
+                    kelas = document.getElementById('editLoanKelasManual').value.trim();
+                    if (!kelas) {
+                        alert('Harap isi kelas atau keperluan secara manual!');
+                        return;
+                    }
+                }
+                loan.kelas = kelas;
+
+                loan.tglPinjam = document.getElementById('editLoanTglPinjam').value;
+                loan.tanggal = loan.tglPinjam;
+                saveData();
+                closeEditLoanModal();
+                alert('Data transaksi berhasil diperbarui.');
+            }
+        }
+
+        function deleteLoan(id) {
+            if (confirm('Hapus data transaksi ini? Jika berupa Inventaris aktif/menunggu, stok barang akan dikembalikan ke inventaris utama. Jika berupa BHP, stok BHP akan dikembalikan seperti semula.')) {
+                const loan = loanData.find(l => l.id === id);
+                if (loan) {
+                    if (loan.jenis === 'Inventaris' && loan.status !== 'Dikembalikan' && loan.status !== 'Ditolak') {
+                        const invObj = inventarisData.find(i => i.id === loan.barangId);
+                        if (invObj) {
+                            invObj.jumlah += loan.jumlah;
+                        }
+                    } else if (loan.jenis === 'BHP') {
+                        const bhpObj = bhpData.find(b => b.id === loan.barangId);
+                        if (bhpObj) {
+                            bhpObj.stok += loan.jumlah;
+                        }
+                    }
+                }
+                loanData = loanData.filter(l => l.id !== id);
+                saveData();
+                alert('Data transaksi berhasil dihapus dan stok terkait telah dikembalikan.');
+            }
+        }
+
+        function openReturnModal(id) {
+            const loan = loanData.find(l => l.id === id);
+            if (!loan) return;
+
+            document.getElementById('returnLoanId').value = loan.id;
+            document.getElementById('returnPeminjamName').innerText = `${loan.peminjam} (${loan.kelas})`;
+            document.getElementById('returnBarangName').innerText = loan.barangNama;
+            document.getElementById('returnTotalPinjam').innerText = loan.jumlah;
+            document.getElementById('returnJmlRusakInput').value = 0;
+            document.getElementById('returnJmlRusakInput').max = loan.jumlah;
+
+            calculateReturnCondition();
+            document.getElementById('returnModal').classList.remove('hidden');
+        }
+
+        function closeReturnModal() {
+            document.getElementById('returnModal').classList.add('hidden');
+        }
+
+        function calculateReturnCondition() {
+            const loanId = parseInt(document.getElementById('returnLoanId').value);
+            const loan = loanData.find(l => l.id === loanId);
+            if (!loan) return;
+
+            const total = parseInt(loan.jumlah);
+            let rusak = parseInt(document.getElementById('returnJmlRusakInput').value);
+            if (isNaN(rusak) || rusak < 0) rusak = 0;
+            if (rusak > total) {
+                rusak = total;
+                document.getElementById('returnJmlRusakInput').value = total;
+            }
+
+            const baik = total - rusak;
+            document.getElementById('returnCalcBaik').innerText = `${baik} Unit`;
+            document.getElementById('returnCalcRusak').innerText = `${rusak} Unit`;
+        }
+
+        function submitReturnLoan() {
+            const loanId = parseInt(document.getElementById('returnLoanId').value);
+            const loan = loanData.find(l => l.id === loanId);
+            if (!loan) return;
+
+            let jmlRusak = parseInt(document.getElementById('returnJmlRusakInput').value);
+            if (isNaN(jmlRusak) || jmlRusak < 0) jmlRusak = 0;
+            if (jmlRusak > loan.jumlah) {
+                alert(`Jumlah rusak tidak boleh melebihi jumlah yang dipinjam (${loan.jumlah})!`);
+                return;
+            }
+
+            const jmlBaik = loan.jumlah - jmlRusak;
+            const invObj = inventarisData.find(i => i.id === loan.barangId);
+
+            if (invObj && jmlBaik > 0) {
+                invObj.jumlah += jmlBaik;
+            }
+
+            loan.status = 'Dikembalikan';
+            if (jmlRusak > 0) {
+                loan.kondisiPulang = `Baik: ${jmlBaik} Unit | Rusak: ${jmlRusak} Unit`;
+
+                const newRusak = {
+                    id: Date.now(),
+                    barangId: loan.barangId,
+                    barangNama: `${loan.barangNama} (Dari Peminjaman: ${loan.peminjam})`,
+                    jumlah: jmlRusak,
+                    tanggal: new Date().toISOString().split('T')[0],
+                    keterangan: `Dilaporkan ${jmlRusak} unit rusak dari total ${loan.jumlah} unit pinjaman oleh ${loan.peminjam} (${loan.kelas})`,
+                    status: 'Dalam Perbaikan (Servis)'
+                };
+                rusakData.push(newRusak);
+                alert(`Pengembalian selesai. ${jmlBaik} unit kembali ke stok normal dan ${jmlRusak} unit rusak dicatat ke menu Inventaris Rusak.`);
+            } else {
+                loan.kondisiPulang = `Baik (${loan.jumlah} Unit)`;
+                alert('Peminjaman berhasil diselesaikan. Semua unit kembali ke stok normal.');
+            }
+
+            closeReturnModal();
+            saveData();
+        }
+
+        // --- RENDER LAPORAN LOKASI ---
+        function renderLocationReport() {
+            const reportLocationTbody = document.getElementById('reportTableLocationBody');
+            if (!reportLocationTbody) return;
+            reportLocationTbody.innerHTML = '';
+            
+            const locationMap = {};
+            let grandTotalAssetVal = 0;
+
+            inventarisData.forEach(item => {
+                const loc = item.lokasi || 'Tidak Diketahui';
+                if (!locationMap[loc]) {
+                    locationMap[loc] = [];
+                }
+                locationMap[loc].push(item);
+            });
+
+            const locations = Object.keys(locationMap);
+            document.getElementById('reportLocCount').innerText = `${locations.length} Lokasi`;
+
+            if (locations.length === 0) {
+                reportLocationTbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-500 italic">Tidak ada data lokasi penyimpanan inventaris.</td></tr>`;
+                document.getElementById('reportTotalAssetVal').innerText = formatRupiah(0);
+            } else {
+                locations.forEach((loc, idx) => {
+                    const itemsInLoc = locationMap[loc];
+                    let totalUnitInLoc = 0;
+                    let totalValInLoc = 0;
+                    let itemsHtml = '<ul class="list-disc pl-4 space-y-1">';
+                    
+                    itemsInLoc.forEach(i => {
+                        const subVal = i.jumlah * i.harga;
+                        totalUnitInLoc += i.jumlah;
+                        totalValInLoc += subVal;
+                        itemsHtml += `<li><b>${i.nama}</b> [<code>${i.kode}</code>] &bull; <i>${i.jumlah} Unit</i> &bull; (${formatRupiah(subVal)})</li>`;
+                    });
+                    itemsHtml += '</ul>';
+
+                    grandTotalAssetVal += totalValInLoc;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="p-2.5 border border-slate-400 text-center font-bold">${idx + 1}</td>
+                        <td class="p-2.5 border border-slate-400 font-bold text-slate-900"><i class="fa-solid fa-location-dot text-blue-600 mr-1"></i> ${loc}</td>
+                        <td class="p-2.5 border border-slate-400">${itemsHtml}</td>
+                        <td class="p-2.5 border border-slate-400 text-center font-bold text-blue-800">${totalUnitInLoc} Unit</td>
+                        <td class="p-2.5 border border-slate-400 text-right font-bold text-slate-900">${formatRupiah(totalValInLoc)}</td>
+                    `;
+                    reportLocationTbody.appendChild(tr);
+                });
+
+                document.getElementById('reportTotalAssetVal').innerText = formatRupiah(grandTotalAssetVal);
+            }
+        }
+
+        // --- RENDER LAPORAN BULANAN BHP ---
+        function renderBhpReport() {
+            const tbody = document.getElementById('reportTableBhpBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            let totalJenis = bhpData.length;
+            let totalStokUnit = 0;
+            let grandTotalBhpVal = 0;
+
+            if (bhpData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-3 text-center text-slate-500 italic">Tidak ada data bahan habis pakai.</td></tr>`;
+                document.getElementById('reportBhpTotalJenis').innerText = `0 Jenis / 0 Unit`;
+                document.getElementById('reportBhpTotalVal').innerText = formatRupiah(0);
+                return;
+            }
+
+            bhpData.forEach((item, idx) => {
+                const subVal = item.stok * item.harga;
+                totalStokUnit += item.stok;
+                grandTotalBhpVal += subVal;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-2.5 border border-slate-400 text-center font-bold">${idx + 1}</td>
+                    <td class="p-2.5 border border-slate-400 font-bold text-slate-900">${item.nama}</td>
+                    <td class="p-2.5 border border-slate-400 text-slate-600">${item.spesifikasi}</td>
+                    <td class="p-2.5 border border-slate-400 text-center font-bold text-emerald-700">${item.stok}</td>
+                    <td class="p-2.5 border border-slate-400 text-center">${item.satuan}</td>
+                    <td class="p-2.5 border border-slate-400 text-right">${formatRupiah(item.harga)}</td>
+                    <td class="p-2.5 border border-slate-400 text-right font-bold text-slate-900">${formatRupiah(subVal)}</td>
+                    <td class="p-2.5 border border-slate-400">
+                        <span class="block font-semibold text-slate-800">${item.sumber}</span>
+                        <span class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot"></i> ${item.lokasi}</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('reportBhpTotalJenis').innerText = `${totalJenis} Jenis / ${totalStokUnit} Unit`;
+            document.getElementById('reportBhpTotalVal').innerText = formatRupiah(grandTotalBhpVal);
+        }
+    </script>
+</body>
+</html>
